@@ -10,7 +10,6 @@ import datetime
 import time
 import requests
 import shutil
-from ghpu import GitHubPluginUpdater
 from PIL import Image
 
 DEFAULT_UPDATE_FREQUENCY = 24 # frequency of update check
