@@ -3,7 +3,7 @@ This plugin creates two actions for downloading images from SecuritySpy.
 Action 1: Simple download to the local mac (source can be SecuritySpy or a specified URL)
 Action 2: Download multiple images and stitch them together vertically
 
-** Instructions **
+== Instructions ==
 
 Example use and setup:
 
