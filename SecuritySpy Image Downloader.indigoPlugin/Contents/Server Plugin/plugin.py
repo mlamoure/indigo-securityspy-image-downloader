@@ -13,7 +13,7 @@ import shutil
 from PIL import Image
 
 DEFAULT_UPDATE_FREQUENCY = 24 # frequency of update check
-
+REQUEST_TIMEOUT = 30
 ################################################################################
 class Plugin(indigo.PluginBase):
 	########################################
@@ -77,20 +77,27 @@ class Plugin(indigo.PluginBase):
 			return strInput
 
 	def getImage(self, url, save):
-		self.debugLog("getting image: " + url + " and saving it to: " + save)
+		indigo.server.log("getting image: " + url + " and saving it to: " + save)
 
 		try:
-			r = requests.get(url, stream=True)
+			r = requests.get(url, stream=True, timeout=100)
 
 			if r.status_code == 200:
 				with open(save, 'wb') as f:
 					r.raw.decode_content = True
 					shutil.copyfileobj(r.raw, f)
+			else:			
+				self.logger.error("   error getting image.  Status code: " + str(r.status_code))
+				del r
+				return False
 
 			del r
+			self.logger.debug("   completed")
 			return True
-		except:
-			self.debugLog("error getting image.")
+		except requests.exceptions.Timeout:
+			self.logger.error("   the request timed out.")
+		except Exception as e:
+			self.logger.error("   error getting image. error: " + str(e))
 			return False
 
 	def stitchImages(self, images):
@@ -181,10 +188,12 @@ class Plugin(indigo.PluginBase):
 		destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 
 		if not os.path.exists(os.path.dirname(destinationFile)):
-			self.debugLog("path does not exist: " + os.path.dirname(destinationFile))
+			self.logger.error("path does not exist: " + os.path.dirname(destinationFile))
 			return False
 
 		if pluginAction.props["type"] == "securityspy":
-			image1_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
+			image_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
+		else:
+			image_url = self.prepareTextValue(pluginAction.props["url"])
 
-			self.getImage(image1_url, destinationFile)
+		self.getImage(image_url, destinationFile)

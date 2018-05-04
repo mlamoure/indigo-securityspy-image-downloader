@@ -9,7 +9,7 @@
 				<Label>Download:</Label>
 				<List>
 					<Option value="securityspy">SecuritySpy Image</Option>
-					<Option value="somethingelse">Something else</Option>
+					<Option value="urlType">Image via URL</Option>
 				</List>
 			</Field>
 
@@ -40,8 +40,8 @@
 				</List>
 			</Field>
 
-			<Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type" visibleBindingValue="somethingelse">
-				<Label>URL:</Label>
+			<Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type" visibleBindingValue="urlType">
+				<Label>URL (variables accepted %%v:1234567%%):</Label>
 			</Field>
 
 		</ConfigUI>
