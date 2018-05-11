@@ -137,9 +137,9 @@ class Plugin(indigo.PluginBase):
 		image1_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
 		image1_file = tempDirectory + "/temp1.jpg"
 		if not self.getImage(image1_url, image1_file):
-			self.debugLog("error stiching files, aborted")
-			return
-		images.append(Image.open(image1_file))
+			self.debugLog("error obtaining image 2, skipping")
+		else:
+			images.append(Image.open(image1_file))
 
 		image2_url = None
 		image3_url = None
@@ -149,23 +149,25 @@ class Plugin(indigo.PluginBase):
 			image2_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam2"]
 			image2_file = tempDirectory + "/temp2.jpg"
 			if not self.getImage(image2_url, image2_file):
-				self.debugLog("error stiching files, aborted")
-				return
-			images.append(Image.open(image2_file))
+				self.debugLog("error obtaining image 2, skipping")
+			else:
+				images.append(Image.open(image2_file))
 
 		if pluginAction.props["cam3"] != "-1":
 			image3_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam3"]
 			image3_file = tempDirectory + "/temp3.jpg"
-			self.getImage(image3_url, image3_file)
-			images.append(Image.open(image3_file))
+			if not self.getImage(image3_url, image3_file):
+				self.debugLog("error obtaining image 3, skipping")
+			else:
+				images.append(Image.open(image3_file))
 
 		if pluginAction.props["cam4"] != "-1":
 			image4_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam4"]
 			image4_file = tempDirectory + "/temp4.jpg"
 			if not self.getImage(image4_url, image4_file):
-				self.debugLog("error stiching files, aborted")
-				return				
-			images.append(Image.open(image4_file))
+				self.debugLog("error obtaining image 4, skipping")
+			else:
+				images.append(Image.open(image4_file))
 
 		result = self.stitchImages(images)
 		result.save(destinationFile)
