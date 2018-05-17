@@ -11,7 +11,7 @@ Example use and setup:
 
 * Step 1: Create variables for each of your cameras with the full path to a location to store a snapshot of that camera.  E.g.  outside_camera1_snapshot    /Users/bob/Documents/CameraImages/outside_camera1_snapshot.jpg
 * Step 2: Copy the IDs for each of the variables
-* Step 3: Create a "Download URL/SecuritySpy Image" Action or Action Group to download the camera image using this plugin.  Get the camera number for your cameras by using the web interface for SecuritySpy and looking for the "cameraNum" variable in the URL bar when viewing the desired camera.
+* Step 3: Create a "Download URL/SecuritySpy Image" Action or Action Group to download the camera image using this plugin.  Get the camera number for your cameras by using the web interface for SecuritySpy and looking for the "cameraNum" variable in the URL bar when viewing the desired camera.  -- UPDATE (v1.1): If using Cynical SecuritySpy plugin, your camera numbers and names will automatically be loaded for you.
 * Step 4: In the action config, enter %%v:XXXXXX%% for the Destination location
 * Step 5: Try it out.
 * Step 6: Create pushover notifications with attachments using the same variable.

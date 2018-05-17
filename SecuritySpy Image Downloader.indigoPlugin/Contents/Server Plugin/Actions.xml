@@ -19,25 +19,7 @@
 
 			<Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
 				<Label>Camera:</Label>
-				<List>
-					<Option value="0">Camera 0</Option>
-					<Option value="1">Camera 1</Option>
-					<Option value="2">Camera 2</Option>
-					<Option value="3">Camera 3</Option>
-					<Option value="4">Camera 4</Option>
-					<Option value="5">Camera 5</Option>
-					<Option value="6">Camera 6</Option>
-					<Option value="7">Camera 7</Option>
-					<Option value="8">Camera 8</Option>
-					<Option value="9">Camera 9</Option>
-					<Option value="10">Camera 10</Option>
-					<Option value="11">Camera 11</Option>
-					<Option value="12">Camera 12</Option>
-					<Option value="13">Camera 13</Option>
-					<Option value="14">Camera 14</Option>
-					<Option value="15">Camera 15</Option>
-					<Option value="16">Camera 16</Option>
-				</List>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
 			<Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type" visibleBindingValue="urlType">
@@ -58,96 +40,22 @@
 
 			<Field type="menu" id="cam1" defaultValue="0">
 				<Label>Camera 1:</Label>
-				<List>
-					<Option value="0">Camera 0</Option>
-					<Option value="1">Camera 1</Option>
-					<Option value="2">Camera 2</Option>
-					<Option value="3">Camera 3</Option>
-					<Option value="4">Camera 4</Option>
-					<Option value="5">Camera 5</Option>
-					<Option value="6">Camera 6</Option>
-					<Option value="7">Camera 7</Option>
-					<Option value="8">Camera 8</Option>
-					<Option value="9">Camera 9</Option>
-					<Option value="10">Camera 10</Option>
-					<Option value="11">Camera 11</Option>
-					<Option value="12">Camera 12</Option>
-					<Option value="13">Camera 13</Option>
-					<Option value="14">Camera 14</Option>
-					<Option value="15">Camera 15</Option>
-					<Option value="16">Camera 16</Option>
-				</List>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
 			<Field type="menu" id="cam2" defaultValue="1">
 				<Label>Camera 2 (stiched):</Label>
-				<List>
-					<Option value="0">Camera 0</Option>
-					<Option value="1">Camera 1</Option>
-					<Option value="2">Camera 2</Option>
-					<Option value="3">Camera 3</Option>
-					<Option value="4">Camera 4</Option>
-					<Option value="5">Camera 5</Option>
-					<Option value="6">Camera 6</Option>
-					<Option value="7">Camera 7</Option>
-					<Option value="8">Camera 8</Option>
-					<Option value="9">Camera 9</Option>
-					<Option value="10">Camera 10</Option>
-					<Option value="11">Camera 11</Option>
-					<Option value="12">Camera 12</Option>
-					<Option value="13">Camera 13</Option>
-					<Option value="14">Camera 14</Option>
-					<Option value="15">Camera 15</Option>
-					<Option value="16">Camera 16</Option>
-				</List>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
 			<Field type="menu" id="cam3" defaultValue="-1">
 				<Label>Camera 3 (stiched):</Label>
-				<List>
-					<Option value="-1">None</Option>
-					<Option value="0">Camera 0</Option>
-					<Option value="1">Camera 1</Option>
-					<Option value="2">Camera 2</Option>
-					<Option value="3">Camera 3</Option>
-					<Option value="4">Camera 4</Option>
-					<Option value="5">Camera 5</Option>
-					<Option value="6">Camera 6</Option>
-					<Option value="7">Camera 7</Option>
-					<Option value="8">Camera 8</Option>
-					<Option value="9">Camera 9</Option>
-					<Option value="10">Camera 10</Option>
-					<Option value="11">Camera 11</Option>
-					<Option value="12">Camera 12</Option>
-					<Option value="13">Camera 13</Option>
-					<Option value="14">Camera 14</Option>
-					<Option value="15">Camera 15</Option>
-					<Option value="16">Camera 16</Option>
-				</List>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
 			<Field type="menu" id="cam4" defaultValue="-1">
 				<Label>Camera 4 (stiched):</Label>
-				<List>
-					<Option value="-1">None</Option>
-					<Option value="0">Camera 0</Option>
-					<Option value="1">Camera 1</Option>
-					<Option value="2">Camera 2</Option>
-					<Option value="3">Camera 3</Option>
-					<Option value="4">Camera 4</Option>
-					<Option value="5">Camera 5</Option>
-					<Option value="6">Camera 6</Option>
-					<Option value="7">Camera 7</Option>
-					<Option value="8">Camera 8</Option>
-					<Option value="9">Camera 9</Option>
-					<Option value="10">Camera 10</Option>
-					<Option value="11">Camera 11</Option>
-					<Option value="12">Camera 12</Option>
-					<Option value="13">Camera 13</Option>
-					<Option value="14">Camera 14</Option>
-					<Option value="15">Camera 15</Option>
-					<Option value="16">Camera 16</Option>
-				</List>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
 		</ConfigUI>

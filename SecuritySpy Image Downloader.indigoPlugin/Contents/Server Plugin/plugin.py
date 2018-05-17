@@ -138,6 +138,7 @@ class Plugin(indigo.PluginBase):
 		image1_file = tempDirectory + "/temp1.jpg"
 		if not self.getImage(image1_url, image1_file):
 			self.debugLog("error obtaining image 2, skipping")
+			image1_url = None
 		else:
 			images.append(Image.open(image1_file))
 
@@ -150,6 +151,7 @@ class Plugin(indigo.PluginBase):
 			image2_file = tempDirectory + "/temp2.jpg"
 			if not self.getImage(image2_url, image2_file):
 				self.debugLog("error obtaining image 2, skipping")
+				image2_url = None
 			else:
 				images.append(Image.open(image2_file))
 
@@ -158,6 +160,7 @@ class Plugin(indigo.PluginBase):
 			image3_file = tempDirectory + "/temp3.jpg"
 			if not self.getImage(image3_url, image3_file):
 				self.debugLog("error obtaining image 3, skipping")
+				image3_url = None
 			else:
 				images.append(Image.open(image3_file))
 
@@ -166,22 +169,66 @@ class Plugin(indigo.PluginBase):
 			image4_file = tempDirectory + "/temp4.jpg"
 			if not self.getImage(image4_url, image4_file):
 				self.debugLog("error obtaining image 4, skipping")
+				image4_url = None
 			else:
 				images.append(Image.open(image4_file))
 
 		result = self.stitchImages(images)
 		result.save(destinationFile)
 
-		os.remove(image1_file)
+		try:
+			if image2_url != None:
+				os.remove(image1_file)
+		except:
+			pass
 
-		if image2_url != None:
-			os.remove(image2_file)
+		try:
+			if image2_url != None:
+				os.remove(image2_file)
+		except:
+			pass
 
-		if image3_url != None:
-			os.remove(image3_file)
+		try:
+			if image3_url != None:
+				os.remove(image3_file)
+		except:
+			pass
 
-		if image4_url != None:
-			os.remove(image4_file)
+		try:
+			if image4_url != None:
+				os.remove(image4_file)
+		except:
+			pass
+
+	def CameraListGenerator(self, filter="", valuesDict=None, typeId="", targetId=0):
+		FilterListUI = []
+
+		for camera in [s for s in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera") if s.enabled]:
+			cameraname = camera.name
+			cameranum = camera.address[camera.address.find("(")+1:camera.address.find(")")]
+
+			FilterListUI.append((cameranum, cameraname))
+
+		if len(FilterListUI) == 0:
+			FilterListUI.append((0, "Camera 0"))
+			FilterListUI.append((1, "Camera 1"))
+			FilterListUI.append((2, "Camera 2"))
+			FilterListUI.append((3, "Camera 3"))
+			FilterListUI.append((4, "Camera 4"))
+			FilterListUI.append((5, "Camera 5"))
+			FilterListUI.append((6, "Camera 6"))
+			FilterListUI.append((7, "Camera 7"))
+			FilterListUI.append((8, "Camera 8"))
+			FilterListUI.append((9, "Camera 9"))
+			FilterListUI.append((10, "Camera 10"))
+			FilterListUI.append((11, "Camera 11"))
+			FilterListUI.append((12, "Camera 12"))
+			FilterListUI.append((13, "Camera 13"))
+			FilterListUI.append((14, "Camera 14"))
+			FilterListUI.append((15, "Camera 15"))
+
+
+		return FilterListUI
 
 	def downloadImage(self, pluginAction, dev):
 		if not self.configured:
