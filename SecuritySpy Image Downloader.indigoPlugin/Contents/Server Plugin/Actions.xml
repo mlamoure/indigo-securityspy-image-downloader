@@ -13,8 +13,22 @@
 				</List>
 			</Field>
 
-			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg">
-				<Label>Destination location and filename (full path, variables accepted %%v:1234567%%):</Label>
+			<Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
+				<Label>You can choose to provide the path and filename of the resulting downloaded image via variable or by typing into this action dialog.  Using a variable is easiest so that it can be referenced in other actions, such as sending a Pushover notification.
+				</Label>
+			</Field>
+
+			<Field id="useVariable" type="checkbox" defaultValue="false">
+				<Label>Use a variable for destination location:</Label>
+			</Field>
+
+			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg" visibleBindingId="useVariable" visibleBindingValue="false">
+				<Label>Destination location and filename (full path):</Label>
+			</Field>
+
+			<Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
+				<Label>Destination variable containing location and filename (full path):</Label>
+				<List class="indigo.variables" filter=""/>
 			</Field>
 
 			<Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
@@ -26,6 +40,15 @@
 				<Label>URL (variables accepted %%v:1234567%%):</Label>
 			</Field>
 
+			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false" visibleBindingId="type" visibleBindingValue="securityspy">
+				<Label>Size is in height pixels.  Leaving blank will use the default size the camera.
+				</Label>
+			</Field>
+
+			<Field id="imageSize" hidden="true" type="textfield" defaultValue="" visibleBindingId="type" visibleBindingValue="securityspy">
+				<Label>Image size (optional):</Label>
+			</Field>
+
 		</ConfigUI>
     </Action>
 
@@ -34,8 +57,23 @@
         <Name>Download and Stitch Multiple SecuritySpy Images</Name>
         <CallbackMethod>stitchImageAction</CallbackMethod>
 		<ConfigUI>
-			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg">
-				<Label>Destination location and filename (full path, variables accepted %%v:1234567%%):</Label>
+
+			<Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
+				<Label>You can choose to provide the path and filename of the resulting stitched image via variable or by typing into this action dialog.  Using a variable is easiest so that it can be referenced in other actions, such as sending a Pushover notification.
+				</Label>
+			</Field>
+
+			<Field id="useVariable" type="checkbox" defaultValue="false">
+				<Label>Use a variable for destination location:</Label>
+			</Field>
+
+			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg" visibleBindingId="useVariable" visibleBindingValue="false">
+				<Label>Destination location and filename (full path):</Label>
+			</Field>
+
+			<Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
+				<Label>Destination variable containing location and filename (full path):</Label>
+				<List class="indigo.variables" filter=""/>
 			</Field>
 
 			<Field type="menu" id="cam1" defaultValue="0">
@@ -56,6 +94,15 @@
 			<Field type="menu" id="cam4" defaultValue="-1">
 				<Label>Camera 4 (stiched):</Label>
 				<List class="self" method="CameraListGenerator" dynamicReload="true" />
+			</Field>
+
+			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
+				<Label>Setting an image size will apply for all images being stitched.  If you have cameras with different resolutions, this will make them all the same size.  Size is in height pixels.  Leaving blank will use the default size for each camera.
+				</Label>
+			</Field>
+
+			<Field id="imageSize" hidden="true" type="textfield" defaultValue="">
+				<Label>Image size (optional):</Label>
 			</Field>
 
 		</ConfigUI>

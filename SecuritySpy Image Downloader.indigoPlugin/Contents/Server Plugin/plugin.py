@@ -9,6 +9,7 @@ import sys
 import datetime
 import time
 import requests
+import urlparse
 import shutil
 from PIL import Image
 
@@ -77,7 +78,11 @@ class Plugin(indigo.PluginBase):
 			return strInput
 
 	def getImage(self, url, save):
-		indigo.server.log("getting image: " + url + " and saving it to: " + save)
+		parsed = urlparse.urlparse(url)
+
+		replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
+
+		indigo.server.log("getting image: " + replaced.geturl() + " and saving it to: " + save)
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -125,7 +130,13 @@ class Plugin(indigo.PluginBase):
 		if not self.configured:
 			return False
 
-		destinationFile = self.prepareTextValue(pluginAction.props["destination"])
+		try:
+			if pluginAction.props["useVariable"]:
+				destinationFile = indigo.variables[pluginAction.props["destinationVariable"]].value
+			else:
+				destinationFile = self.prepareTextValue(pluginAction.props["destination"])
+		except:
+			destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 
 		if not os.path.exists(os.path.dirname(destinationFile)):
 			self.debugLog("path does not exist: " + os.path.dirname(destinationFile))
@@ -134,7 +145,21 @@ class Plugin(indigo.PluginBase):
 		tempDirectory = os.path.dirname(destinationFile)
 		images = []
 
+		size_configured = False
+
+		if "imageSize" in pluginAction.props and len(pluginAction.props["imageSize"]) > 0:
+			size_configured = True
+
+			try:
+				size = int(pluginAction.props["imageSize"])
+			except:
+				size_configured = False
+
 		image1_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
+
+		if size_configured:
+			image1_url = image1_url + "&imageSize=" + str(size)
+
 		image1_file = tempDirectory + "/temp1.jpg"
 		if not self.getImage(image1_url, image1_file):
 			self.debugLog("error obtaining image 2, skipping")
@@ -148,6 +173,10 @@ class Plugin(indigo.PluginBase):
 
 		if pluginAction.props["cam2"] != "-1":
 			image2_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam2"]
+
+			if size_configured:
+				image2_url = image2_url + "&imageSize=" + str(size)
+
 			image2_file = tempDirectory + "/temp2.jpg"
 			if not self.getImage(image2_url, image2_file):
 				self.debugLog("error obtaining image 2, skipping")
@@ -157,6 +186,10 @@ class Plugin(indigo.PluginBase):
 
 		if pluginAction.props["cam3"] != "-1":
 			image3_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam3"]
+
+			if size_configured:
+				image3_url = image3_url + "&imageSize=" + str(size)
+
 			image3_file = tempDirectory + "/temp3.jpg"
 			if not self.getImage(image3_url, image3_file):
 				self.debugLog("error obtaining image 3, skipping")
@@ -166,6 +199,10 @@ class Plugin(indigo.PluginBase):
 
 		if pluginAction.props["cam4"] != "-1":
 			image4_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam4"]
+
+			if size_configured:
+				image4_url = image4_url + "&imageSize=" + str(size)
+
 			image4_file = tempDirectory + "/temp4.jpg"
 			if not self.getImage(image4_url, image4_file):
 				self.debugLog("error obtaining image 4, skipping")
@@ -227,6 +264,7 @@ class Plugin(indigo.PluginBase):
 			FilterListUI.append((14, "Camera 14"))
 			FilterListUI.append((15, "Camera 15"))
 
+		FilterListUI.append(("-1", "none"))
 
 		return FilterListUI
 
@@ -234,7 +272,13 @@ class Plugin(indigo.PluginBase):
 		if not self.configured:
 			return False
 
-		destinationFile = self.prepareTextValue(pluginAction.props["destination"])
+		try:
+			if pluginAction.props["useVariable"]:
+				destinationFile = indigo.variables[pluginAction.props["destinationVariable"]].value
+			else:
+				destinationFile = self.prepareTextValue(pluginAction.props["destination"])
+		except:
+			destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 
 		if not os.path.exists(os.path.dirname(destinationFile)):
 			self.logger.error("path does not exist: " + os.path.dirname(destinationFile))
