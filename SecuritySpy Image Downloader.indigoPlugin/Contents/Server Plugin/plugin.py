@@ -12,6 +12,7 @@ import requests
 import urlparse
 import shutil
 from PIL import Image
+from distutils.version import LooseVersion
 
 DEFAULT_UPDATE_FREQUENCY = 24 # frequency of update check
 REQUEST_TIMEOUT = 30
@@ -25,16 +26,17 @@ class Plugin(indigo.PluginBase):
 		self.securityspy_port = pluginPrefs.get("port", None)
 		self.securityspy_login = pluginPrefs.get("login", None)
 		self.securityspy_pass = pluginPrefs.get("password", None)
+		self.lastUpdateCheck = None
 
 		self.updateURL()
-
 
 	########################################
 	def startup(self):
 		self.debugLog(u"startup called")
+		self.version_check()
 
 	def checkForUpdates(self):
-		self.updater.checkForUpdate()
+		self.version_check()
 
 	def updateURL(self):
 		self.configured = (self.securityspy_ip is not None) and (self.securityspy_port  is not None)
@@ -55,9 +57,36 @@ class Plugin(indigo.PluginBase):
 
 			self.updateURL()
 
+	def version_check(self):
+		pluginId = self.pluginId
+		self.lastUpdateCheck = datetime.datetime.now()		
 
-	def updatePlugin(self):
-		self.updater.update()
+		# Create some URLs we'll use later on
+		current_version_url = "https://api.indigodomo.com/api/v2/pluginstore/plugin-version-info.json?pluginId={}".format(pluginId)
+		store_detail_url = "https://www.indigodomo.com/pluginstore/{}/"
+		try:
+			# GET the url from the servers with a short timeout (avoids hanging the plugin)
+			reply = requests.get(current_version_url, timeout=5)
+			# This will raise an exception if the server returned an error
+			reply.raise_for_status()
+			# We now have a good reply so we get the json
+			reply_dict = reply.json()
+			plugin_dict = reply_dict["plugins"][0]
+			# Make sure that the 'latestRelease' element is a dict (could be a string for built-in plugins).
+			latest_release = plugin_dict["latestRelease"]
+			if isinstance(latest_release, dict):
+				# Compare the current version with the one returned in the reply dict
+				if LooseVersion(latest_release["number"]) > LooseVersion(self.pluginVersion):
+				# The release in the store is newer than the current version.
+				# We'll do a couple of things: first, we'll just log it
+				  self.logger.info(
+					"A new version of the plugin (v{}) is available at: {}".format(
+						latest_release["number"],
+						store_detail_url.format(plugin_dict["id"])
+					)
+				)
+		except Exception as exc:
+			self.logger.error(unicode(exc))
 
 	def shutdown(self):
 		self.debugLog(u"shutdown called")
@@ -77,12 +106,28 @@ class Plugin(indigo.PluginBase):
 
 			return strInput
 
-	def getImage(self, url, save):
+	def runConcurrentThread(self):
+		self.logger.debug("Starting concurrent tread")
+
+		self.sleep(1)
+		
+		try:
+			while True:
+				self.sleep(int(DEFAULT_UPDATE_FREQUENCY + 1))
+
+				if self.lastUpdateCheck < datetime.datetime.now()-datetime.timedelta(hours=DEFAULT_UPDATE_FREQUENCY):
+					self.version_check()
+
+		except self.StopThread:
+			self.logger.debug("Received StopThread")
+
+	def getImage(self, url, save, log = True):
 		parsed = urlparse.urlparse(url)
 
 		replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
 
-		indigo.server.log("getting image: " + replaced.geturl() + " and saving it to: " + save)
+		if log:
+			indigo.server.log("getting image: " + replaced.geturl() + " and saving it to: " + save)
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -145,27 +190,24 @@ class Plugin(indigo.PluginBase):
 		tempDirectory = os.path.dirname(destinationFile)
 		images = []
 
-		size_configured = False
-
-		if "imageSize" in pluginAction.props and len(pluginAction.props["imageSize"]) > 0:
-			size_configured = True
-
-			try:
-				size = int(pluginAction.props["imageSize"])
-			except:
-				size_configured = False
-
 		image1_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
-
-		if size_configured:
-			image1_url = image1_url + "&imageSize=" + str(size)
 
 		image1_file = tempDirectory + "/temp1.jpg"
 		if not self.getImage(image1_url, image1_file):
 			self.debugLog("error obtaining image 2, skipping")
 			image1_url = None
 		else:
-			images.append(Image.open(image1_file))
+			image = Image.open(image1_file)
+
+			try:
+				if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
+					indigo.server.log("resized camera 1 to max width of " + pluginAction.props["imageSize"])
+					size = int(pluginAction.props["imageSize"]), 100000
+					image.thumbnail(size, Image.ANTIALIAS)
+			except:
+				pass
+
+			images.append(image)
 
 		image2_url = None
 		image3_url = None
@@ -174,41 +216,62 @@ class Plugin(indigo.PluginBase):
 		if pluginAction.props["cam2"] != "-1":
 			image2_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam2"]
 
-			if size_configured:
-				image2_url = image2_url + "&imageSize=" + str(size)
-
 			image2_file = tempDirectory + "/temp2.jpg"
 			if not self.getImage(image2_url, image2_file):
 				self.debugLog("error obtaining image 2, skipping")
 				image2_url = None
 			else:
-				images.append(Image.open(image2_file))
+				image = Image.open(image2_file)
+
+				try:
+					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
+						indigo.server.log("resized camera 2")
+						size = int(pluginAction.props["imageSize"]), 100000
+						image.thumbnail(size, Image.ANTIALIAS)
+				except:
+					pass
+
+				images.append(image)
 
 		if pluginAction.props["cam3"] != "-1":
 			image3_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam3"]
-
-			if size_configured:
-				image3_url = image3_url + "&imageSize=" + str(size)
 
 			image3_file = tempDirectory + "/temp3.jpg"
 			if not self.getImage(image3_url, image3_file):
 				self.debugLog("error obtaining image 3, skipping")
 				image3_url = None
 			else:
-				images.append(Image.open(image3_file))
+				image = Image.open(image3_file)
+
+				try:
+					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
+						indigo.server.log("resized camera 3")
+						size = int(pluginAction.props["imageSize"]), 100000
+						image.thumbnail(size, Image.ANTIALIAS)
+				except:
+					pass
+
+				images.append(image)
 
 		if pluginAction.props["cam4"] != "-1":
 			image4_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam4"]
-
-			if size_configured:
-				image4_url = image4_url + "&imageSize=" + str(size)
 
 			image4_file = tempDirectory + "/temp4.jpg"
 			if not self.getImage(image4_url, image4_file):
 				self.debugLog("error obtaining image 4, skipping")
 				image4_url = None
 			else:
-				images.append(Image.open(image4_file))
+				image = Image.open(image4_file)
+
+				try:
+					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
+						indigo.server.log("resized camera 4")
+						size = int(pluginAction.props["imageSize"]), 100000
+						image.thumbnail(size, Image.ANTIALIAS)
+				except:
+					pass
+
+				images.append(image)
 
 		result = self.stitchImages(images)
 		result.save(destinationFile)
@@ -289,4 +352,28 @@ class Plugin(indigo.PluginBase):
 		else:
 			image_url = self.prepareTextValue(pluginAction.props["url"])
 
-		self.getImage(image_url, destinationFile)
+		imageSize = -1
+
+		try:
+			if "imageSize" in pluginAction.props and len(pluginAction.props["imageSize"]) > 0 and int(pluginAction.props["imageSize"]):
+				imageSize = int(pluginAction.props["imageSize"])
+		except:
+			self.logger.error("error with the resize, must be integer.  Continuing without resizing.")
+
+		try:
+			if imageSize != -1:
+				tempDirectory = os.path.dirname(destinationFile)
+				tempFile = tempDirectory + "/temp_forResize.jpg"
+				self.getImage(image_url, tempFile, True)
+				image = Image.open(tempFile)
+				size = imageSize, 100000
+				image.thumbnail(size, Image.ANTIALIAS)
+				image.save(destinationFile)
+				os.remove(tempFile)
+				indigo.server.log("obtained image, resized, and saved it to: " + destinationFile)
+			else:
+				self.getImage(image_url, destinationFile)
+		except Exception as e:
+			self.logger.error("error resizing the image: " + str(e))
+			self.getImage(image_url, destinationFile)
+

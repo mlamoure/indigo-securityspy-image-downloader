@@ -45,8 +45,8 @@
 				</Label>
 			</Field>
 
-			<Field id="imageSize" hidden="true" type="textfield" defaultValue="" visibleBindingId="type" visibleBindingValue="securityspy">
-				<Label>Image size (optional):</Label>
+			<Field id="imageSize" type="textfield" defaultValue="" visibleBindingId="type" visibleBindingValue="securityspy">
+				<Label>Maximum image size width (optional):</Label>
 			</Field>
 
 		</ConfigUI>
@@ -101,8 +101,8 @@
 				</Label>
 			</Field>
 
-			<Field id="imageSize" hidden="true" type="textfield" defaultValue="">
-				<Label>Image size (optional):</Label>
+			<Field id="imageSize" type="textfield" defaultValue="">
+				<Label>Maximum image size width (optional):</Label>
 			</Field>
 
 		</ConfigUI>
