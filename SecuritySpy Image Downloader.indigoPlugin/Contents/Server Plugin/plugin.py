@@ -121,10 +121,13 @@ class Plugin(indigo.PluginBase):
 		except self.StopThread:
 			self.logger.debug("Received StopThread")
 
-	def getImage(self, url, save, log = True):
+	def getImage(self, url, save, log = True, parsePwd = True):
 		parsed = urlparse.urlparse(url)
 
-		replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
+		if parsePwd and "@" in parsed:
+			replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
+		else:
+			replaced = parsed
 
 		if log:
 			indigo.server.log("getting image: " + replaced.geturl() + " and saving it to: " + save)
