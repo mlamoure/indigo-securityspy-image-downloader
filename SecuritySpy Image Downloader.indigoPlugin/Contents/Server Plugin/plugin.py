@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 ####################
 
+import sys
+sys.path.append('./lib')
+
 import indigo
 
 import os
@@ -13,6 +16,7 @@ import urlparse
 import shutil
 from PIL import Image
 from distutils.version import LooseVersion
+from requests.auth import HTTPDigestAuth
 
 DEFAULT_UPDATE_FREQUENCY = 24 # frequency of update check
 REQUEST_TIMEOUT = 30
@@ -124,7 +128,7 @@ class Plugin(indigo.PluginBase):
 	def getImage(self, url, save, log = True, parsePwd = True):
 		parsed = urlparse.urlparse(url)
 
-		if parsePwd and "@" in parsed:
+		if parsePwd:
 			replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
 		else:
 			replaced = parsed
@@ -363,20 +367,61 @@ class Plugin(indigo.PluginBase):
 		except:
 			self.logger.error("error with the resize, must be integer.  Continuing without resizing.")
 
-		try:
-			if imageSize != -1:
+		if imageSize != -1 and not pluginAction.props["gif"]:
+			tempDirectory = os.path.dirname(destinationFile)
+			tempFile = tempDirectory + "/temp_forResize.jpg"
+			self.getImage(image_url, tempFile, True)
+			image = Image.open(tempFile)
+			size = imageSize, 100000
+			image.thumbnail(size, Image.ANTIALIAS)
+			image.save(destinationFile)
+			os.remove(tempFile)
+			indigo.server.log("obtained image, resized, and saved it to: " + destinationFile)
+		else:
+			if pluginAction.props["gif"]:
+
+				quality = 60
+
+				if os.path.splitext(destinationFile)[1] != ".gif":
+					destinationFile = os.path.splitext(destinationFile)[0] + '.gif'
+
+				indigo.server.log("obtaining the individual frames, creating a animated gif, and saving to: " + destinationFile)
 				tempDirectory = os.path.dirname(destinationFile)
-				tempFile = tempDirectory + "/temp_forResize.jpg"
-				self.getImage(image_url, tempFile, True)
-				image = Image.open(tempFile)
-				size = imageSize, 100000
-				image.thumbnail(size, Image.ANTIALIAS)
-				image.save(destinationFile)
-				os.remove(tempFile)
-				indigo.server.log("obtained image, resized, and saved it to: " + destinationFile)
+				filenames = []
+				i = 0
+				while i * 2.0 <= int(pluginAction.props["gifTime"]):
+					tempFile = tempDirectory + "/temp_forGif" + str(i) + ".jpg"
+
+					self.getImage(image_url, tempFile, False)
+
+					im = Image.open(tempFile)
+
+					if imageSize != -1:
+						size = imageSize, 100000
+						im.thumbnail(size, Image.ANTIALIAS)
+
+#					tempFile = os.path.splitext(tempFile)[0] + '.png'
+					im.save(tempFile, 'JPEG', quality=quality)
+
+					filenames.append(tempFile)
+
+					time.sleep(2)
+					i = i + 1
+
+				# Open all the frames
+				images = []
+				for n in filenames:
+					frame = Image.open(n)
+					images.append(frame)
+					os.remove(n)
+
+				# Save the frames as an animated GIF
+				images[0].save(destinationFile,
+							   save_all=True,
+							   append_images=images[1:],
+							   duration=300,
+							   loop=0, quality=quality)
+
 			else:
 				self.getImage(image_url, destinationFile)
-		except Exception as e:
-			self.logger.error("error resizing the image: " + str(e))
-			self.getImage(image_url, destinationFile)
 
