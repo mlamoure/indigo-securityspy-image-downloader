@@ -125,7 +125,7 @@ class Plugin(indigo.PluginBase):
 		except self.StopThread:
 			self.logger.debug("Received StopThread")
 
-	def getImage(self, url, save, log = True, parsePwd = True):
+	def getImage(self, url, save, log = True, parsePwd = True, devId = None):
 		parsed = urlparse.urlparse(url)
 
 		if parsePwd:
@@ -133,8 +133,14 @@ class Plugin(indigo.PluginBase):
 		else:
 			replaced = parsed
 
-		if log:
-			indigo.server.log("getting image: " + replaced.geturl() + " and saving it to: " + save)
+		if log or self.debug:
+
+			if not devId is None:
+				indigo.server.log("fetching image from '" + indigo.devices[devId].name + "' and saving it to: '" + save + "'")
+			else:
+				indigo.server.log("fetching image: " + replaced.geturl() + " and saving it to: '" + save + "'")
+
+			self.debugLog(u"fetching image URL: " + replaced.geturl())
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -144,17 +150,18 @@ class Plugin(indigo.PluginBase):
 					r.raw.decode_content = True
 					shutil.copyfileobj(r.raw, f)
 			else:			
-				self.logger.error("   error getting image.  Status code: " + str(r.status_code))
+				self.logger.error("   error fetching image.  Status code: " + str(r.status_code))
 				del r
 				return False
 
 			del r
-			self.logger.debug("   completed")
+#			self.logger.debug("   completed")
 			return True
 		except requests.exceptions.Timeout:
 			self.logger.error("   the request timed out.")
+			return False
 		except Exception as e:
-			self.logger.error("   error getting image. error: " + str(e))
+			self.logger.error("   error fetching image. error: " + str(e))
 			return False
 
 	def stitchImages(self, images):
@@ -197,82 +204,28 @@ class Plugin(indigo.PluginBase):
 		tempDirectory = os.path.dirname(destinationFile)
 		images = []
 
-		image1_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
+		for i in range(1, 5):
+			camera_devId = None
+			for camera in [s for s in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera") if s.enabled]:
+				cameranum = camera.address[camera.address.find("(")+1:camera.address.find(")")]
 
-		image1_file = tempDirectory + "/temp1.jpg"
-		if not self.getImage(image1_url, image1_file):
-			self.debugLog("error obtaining image 2, skipping")
-			image1_url = None
-		else:
-			image = Image.open(image1_file)
+				if cameranum == pluginAction.props["cam" + str(i)]:
+					camera_devId = camera.id
+					camera_name = camera.name
+					break
 
-			try:
-				if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
-					indigo.server.log("resized camera 1 to max width of " + pluginAction.props["imageSize"])
-					size = int(pluginAction.props["imageSize"]), 100000
-					image.thumbnail(size, Image.ANTIALIAS)
-			except:
-				pass
+			image_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam" + str(i)]
 
-			images.append(image)
-
-		image2_url = None
-		image3_url = None
-		image4_url = None
-
-		if pluginAction.props["cam2"] != "-1":
-			image2_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam2"]
-
-			image2_file = tempDirectory + "/temp2.jpg"
-			if not self.getImage(image2_url, image2_file):
-				self.debugLog("error obtaining image 2, skipping")
-				image2_url = None
+			image_file = tempDirectory + "/temp" + str(i) + ".jpg"
+			if not self.getImage(image_url, image_file, True, True, camera_devId):
+				self.debugLog("error obtaining image for camera '" + camera_name + "', skipping")
+				image_url = None
 			else:
-				image = Image.open(image2_file)
+				image = Image.open(image_file)
 
 				try:
 					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
-						indigo.server.log("resized camera 2")
-						size = int(pluginAction.props["imageSize"]), 100000
-						image.thumbnail(size, Image.ANTIALIAS)
-				except:
-					pass
-
-				images.append(image)
-
-		if pluginAction.props["cam3"] != "-1":
-			image3_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam3"]
-
-			image3_file = tempDirectory + "/temp3.jpg"
-			if not self.getImage(image3_url, image3_file):
-				self.debugLog("error obtaining image 3, skipping")
-				image3_url = None
-			else:
-				image = Image.open(image3_file)
-
-				try:
-					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
-						indigo.server.log("resized camera 3")
-						size = int(pluginAction.props["imageSize"]), 100000
-						image.thumbnail(size, Image.ANTIALIAS)
-				except:
-					pass
-
-				images.append(image)
-
-		if pluginAction.props["cam4"] != "-1":
-			image4_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam4"]
-
-			image4_file = tempDirectory + "/temp4.jpg"
-			if not self.getImage(image4_url, image4_file):
-				self.debugLog("error obtaining image 4, skipping")
-				image4_url = None
-			else:
-				image = Image.open(image4_file)
-
-				try:
-					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
-						indigo.server.log("resized camera 4")
+						indigo.server.log("resized '" + camera_name + "' camera image to max width of " + pluginAction.props["imageSize"] + "px")
 						size = int(pluginAction.props["imageSize"]), 100000
 						image.thumbnail(size, Image.ANTIALIAS)
 				except:
@@ -282,30 +235,16 @@ class Plugin(indigo.PluginBase):
 
 		result = self.stitchImages(images)
 		result.save(destinationFile)
+		indigo.server.log("stitched " + str(len(images)) + " camera images and saved to: " + destinationFile)
 
-		try:
-			if image2_url != None:
-				os.remove(image1_file)
-		except:
-			pass
+		for i in range(1, 5):
+			image_file = tempDirectory + "/temp" + str(i) + ".jpg"
 
-		try:
-			if image2_url != None:
-				os.remove(image2_file)
-		except:
-			pass
-
-		try:
-			if image3_url != None:
-				os.remove(image3_file)
-		except:
-			pass
-
-		try:
-			if image4_url != None:
-				os.remove(image4_file)
-		except:
-			pass
+			try:
+				os.remove(image_file)
+				self.debugLog(u"deleting file " + image_file)
+			except:
+				pass
 
 	def CameraListGenerator(self, filter="", valuesDict=None, typeId="", targetId=0):
 		FilterListUI = []
@@ -354,7 +293,16 @@ class Plugin(indigo.PluginBase):
 			self.logger.error("path does not exist: " + os.path.dirname(destinationFile))
 			return False
 
+		camera_devId = None
 		if pluginAction.props["type"] == "securityspy":
+			for camera in [s for s in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera") if s.enabled]:
+				cameranum = camera.address[camera.address.find("(")+1:camera.address.find(")")]
+
+				if cameranum == pluginAction.props["cam1"]:
+					camera_devId = camera.id
+					camera_name = camera.name
+					break
+
 			image_url = self.securityspy_url + "/++image?cameraNum=" + pluginAction.props["cam1"]
 		else:
 			image_url = self.prepareTextValue(pluginAction.props["url"])
@@ -370,29 +318,33 @@ class Plugin(indigo.PluginBase):
 		if imageSize != -1 and not pluginAction.props["gif"]:
 			tempDirectory = os.path.dirname(destinationFile)
 			tempFile = tempDirectory + "/temp_forResize.jpg"
-			self.getImage(image_url, tempFile, True)
+			self.getImage(image_url, tempFile, False, True, camera_devId)
 			image = Image.open(tempFile)
 			size = imageSize, 100000
 			image.thumbnail(size, Image.ANTIALIAS)
 			image.save(destinationFile)
+			self.debugLog(u"deleting file " + tempFile)
 			os.remove(tempFile)
-			indigo.server.log("obtained image, resized, and saved it to: " + destinationFile)
+			indigo.server.log("fetched image from '" + camera_name + "', resized, and saved it to: " + destinationFile)
 		else:
-			if pluginAction.props["gif"]:
+			if pluginAction.props["type"] == "urlType":
+				self.getImage(image_url, destinationFile, True, False, None)
+				
+			elif "gif" in pluginAction.props and pluginAction.props["gif"]:
 
 				quality = 60
 
 				if os.path.splitext(destinationFile)[1] != ".gif":
 					destinationFile = os.path.splitext(destinationFile)[0] + '.gif'
 
-				indigo.server.log("obtaining the individual frames, creating a animated gif, and saving to: " + destinationFile)
+				indigo.server.log("fetched images from '" + camera_name + "', creating a animated gif, and saving to: " + destinationFile)
 				tempDirectory = os.path.dirname(destinationFile)
 				filenames = []
 				i = 0
 				while i * 2.0 <= int(pluginAction.props["gifTime"]):
 					tempFile = tempDirectory + "/temp_forGif" + str(i) + ".jpg"
 
-					self.getImage(image_url, tempFile, False)
+					self.getImage(image_url, tempFile, False, True, camera_devId)
 
 					im = Image.open(tempFile)
 
@@ -413,6 +365,7 @@ class Plugin(indigo.PluginBase):
 				for n in filenames:
 					frame = Image.open(n)
 					images.append(frame)
+					self.debugLog(u"deleting file " + n)
 					os.remove(n)
 
 				# Save the frames as an animated GIF
@@ -423,5 +376,5 @@ class Plugin(indigo.PluginBase):
 							   loop=0, quality=quality)
 
 			else:
-				self.getImage(image_url, destinationFile)
+				self.getImage(image_url, destinationFile, True, True, camera_devId)
 
