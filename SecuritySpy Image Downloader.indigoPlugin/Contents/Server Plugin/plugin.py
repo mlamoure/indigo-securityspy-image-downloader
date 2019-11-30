@@ -125,7 +125,7 @@ class Plugin(indigo.PluginBase):
 		except self.StopThread:
 			self.logger.debug("Received StopThread")
 
-	def getImage(self, url, save, log = True, parsePwd = True, devId = None):
+	def getImage(self, url, save, log = True, parsePwd = True, devId = None):		
 		parsed = urlparse.urlparse(url)
 
 		if parsePwd:
@@ -189,9 +189,11 @@ class Plugin(indigo.PluginBase):
 		if not self.configured:
 			return False
 
+		start_time = time.time()
+
 		try:
 			if pluginAction.props["useVariable"]:
-				destinationFile = indigo.variables[pluginAction.props["destinationVariable"]].value
+				destinationFile = indigo.variables[int(pluginAction.props["destinationVariable"])].value
 			else:
 				destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 		except:
@@ -204,7 +206,11 @@ class Plugin(indigo.PluginBase):
 		tempDirectory = os.path.dirname(destinationFile)
 		images = []
 
-		for i in range(1, 5):
+		for i in range(1, 7):
+			if "cam" + str(i) not in pluginAction.props or pluginAction.props["cam" + str(i)] == "-1" or pluginAction.props["cam" + str(i)] == "":
+				self.debugLog("skipping camera")
+				continue
+
 			camera_devId = None
 			for camera in [s for s in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera") if s.enabled]:
 				cameranum = camera.address[camera.address.find("(")+1:camera.address.find(")")]
@@ -235,9 +241,20 @@ class Plugin(indigo.PluginBase):
 
 		result = self.stitchImages(images)
 		result.save(destinationFile)
-		indigo.server.log("stitched " + str(len(images)) + " camera images and saved to: " + destinationFile)
 
-		for i in range(1, 5):
+		end_time = time.time()
+		total_time = round(end_time - start_time, 2)
+
+		file_size = os.path.getsize(destinationFile) >> 20
+		file_size_str = str(file_size) + " MB"
+
+		if file_size == 0:
+			file_size = os.path.getsize(destinationFile) >> 10
+			file_size_str = str(file_size) + " KB"
+
+		indigo.server.log("stitched " + str(len(images)) + " camera images and saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
+
+		for i in range(1, 7):
 			image_file = tempDirectory + "/temp" + str(i) + ".jpg"
 
 			try:
@@ -281,9 +298,11 @@ class Plugin(indigo.PluginBase):
 		if not self.configured:
 			return False
 
+		start_time = time.time()
+
 		try:
 			if pluginAction.props["useVariable"]:
-				destinationFile = indigo.variables[pluginAction.props["destinationVariable"]].value
+				destinationFile = indigo.variables[int(pluginAction.props["destinationVariable"])].value
 			else:
 				destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 		except:
@@ -337,11 +356,23 @@ class Plugin(indigo.PluginBase):
 				if os.path.splitext(destinationFile)[1] != ".gif":
 					destinationFile = os.path.splitext(destinationFile)[0] + '.gif'
 
-				indigo.server.log("fetched images from '" + camera_name + "', creating a animated gif, and saving to: " + destinationFile)
 				tempDirectory = os.path.dirname(destinationFile)
 				filenames = []
 				i = 0
-				while i * 2.0 <= int(pluginAction.props["gifTime"]):
+
+				try:
+					total_gif_time = int(pluginAction.props["gifTime"])
+				except:
+					total_gif_time = 4
+
+				while i * 2.0 <= total_gif_time:
+					if i != 0:
+						end_time = time.time()
+						total_time = round(end_time - start_time, 2)
+						sleep_time = (2*i) - total_time
+						self.debugLog("time since start: " + str(total_time) + " seconds; sleeping for: " + str(sleep_time) + " seconds; total time for next frame grab: " + str(total_time + sleep_time) + " seconds.")
+						time.sleep(sleep_time)
+					
 					tempFile = tempDirectory + "/temp_forGif" + str(i) + ".jpg"
 
 					self.getImage(image_url, tempFile, False, True, camera_devId)
@@ -356,9 +387,11 @@ class Plugin(indigo.PluginBase):
 					im.save(tempFile, 'JPEG', quality=quality)
 
 					filenames.append(tempFile)
-
-					time.sleep(2)
 					i = i + 1
+
+				end_time = time.time()
+				total_time = round(end_time - start_time, 2)
+				self.debugLog("Capture complete, time since start: " + str(total_time))
 
 				# Open all the frames
 				images = []
@@ -374,6 +407,17 @@ class Plugin(indigo.PluginBase):
 							   append_images=images[1:],
 							   duration=300,
 							   loop=0, quality=quality)
+
+				file_size = os.path.getsize(destinationFile) >> 20
+				file_size_str = str(file_size) + " MB"
+
+				if file_size == 0:
+					file_size = os.path.getsize(destinationFile) >> 10
+					file_size_str = str(file_size) + " KB"
+
+				end_time = time.time()
+				total_time = round(end_time - start_time, 2)
+				indigo.server.log("fetched images from '" + camera_name + "', created a animated gif (" + str(total_gif_time) + " seconds, " + str(i) + " frames), saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
 
 			else:
 				self.getImage(image_url, destinationFile, True, True, camera_devId)
