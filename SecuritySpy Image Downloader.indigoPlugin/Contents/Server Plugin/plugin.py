@@ -136,11 +136,11 @@ class Plugin(indigo.PluginBase):
 		if log or self.debug:
 
 			if not devId is None:
-				indigo.server.log("fetching image from '" + indigo.devices[devId].name + "' and saving it to: '" + save + "'")
+				indigo.server.log("fetched image from '" + indigo.devices[devId].name + "' and saving it to: '" + save + "'")
 			else:
-				indigo.server.log("fetching image: " + replaced.geturl() + " and saving it to: '" + save + "'")
+				indigo.server.log("fetched image: " + replaced.geturl() + " and saving it to: '" + save + "'")
 
-			self.debugLog(u"fetching image URL: " + replaced.geturl())
+			self.debugLog(u"fetched image URL: " + replaced.geturl())
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -248,9 +248,9 @@ class Plugin(indigo.PluginBase):
 		file_size = os.path.getsize(destinationFile) >> 20
 		file_size_str = str(file_size) + " MB"
 
-		if file_size == 0:
-			file_size = os.path.getsize(destinationFile) >> 10
-			file_size_str = str(file_size) + " KB"
+#		if file_size == 0:
+		file_size = os.path.getsize(destinationFile) >> 10
+		file_size_str = str(file_size) + " KB"
 
 		indigo.server.log("stitched " + str(len(images)) + " camera images and saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
 
@@ -301,6 +301,11 @@ class Plugin(indigo.PluginBase):
 		start_time = time.time()
 
 		try:
+			hide_log = pluginAction.props["hidelog"]
+		except:
+			hide_log = False
+
+		try:
 			if pluginAction.props["useVariable"]:
 				destinationFile = indigo.variables[int(pluginAction.props["destinationVariable"])].value
 			else:
@@ -344,7 +349,9 @@ class Plugin(indigo.PluginBase):
 			image.save(destinationFile)
 			self.debugLog(u"deleting file " + tempFile)
 			os.remove(tempFile)
-			indigo.server.log("fetched image from '" + camera_name + "', resized, and saved it to: " + destinationFile)
+
+			if not hide_log:
+				indigo.server.log("fetched image from '" + camera_name + "', resized, and saved it to: " + destinationFile)
 		else:
 			if pluginAction.props["type"] == "urlType":
 				self.getImage(image_url, destinationFile, True, False, None)
@@ -408,17 +415,15 @@ class Plugin(indigo.PluginBase):
 							   duration=300,
 							   loop=0, quality=quality)
 
-				file_size = os.path.getsize(destinationFile) >> 20
-				file_size_str = str(file_size) + " MB"
-
-				if file_size == 0:
-					file_size = os.path.getsize(destinationFile) >> 10
-					file_size_str = str(file_size) + " KB"
+				file_size = os.path.getsize(destinationFile) >> 10
+				file_size_str = str(file_size) + " KB"
 
 				end_time = time.time()
 				total_time = round(end_time - start_time, 2)
-				indigo.server.log("fetched images from '" + camera_name + "', created a animated gif (" + str(total_gif_time) + " seconds, " + str(i) + " frames), saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
+		
+				if not hide_log:
+					indigo.server.log("fetched images from '" + camera_name + "', created a animated gif (" + str(total_gif_time) + " seconds, " + str(i) + " frames), saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
 
 			else:
-				self.getImage(image_url, destinationFile, True, True, camera_devId)
+				self.getImage(image_url, destinationFile, True, not hide_log, camera_devId)
 
