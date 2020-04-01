@@ -342,7 +342,7 @@ class Plugin(indigo.PluginBase):
 		if imageSize != -1 and not pluginAction.props["gif"]:
 			tempDirectory = os.path.dirname(destinationFile)
 			tempFile = tempDirectory + "/temp_forResize.jpg"
-			self.getImage(image_url, tempFile, False, True, camera_devId)
+			self.getImage(image_url, tempFile, not hide_log, True, camera_devId)
 			image = Image.open(tempFile)
 			size = imageSize, 100000
 			image.thumbnail(size, Image.ANTIALIAS)
@@ -354,7 +354,7 @@ class Plugin(indigo.PluginBase):
 				indigo.server.log("fetched image from '" + camera_name + "', resized, and saved it to: " + destinationFile)
 		else:
 			if pluginAction.props["type"] == "urlType":
-				self.getImage(image_url, destinationFile, True, False, None)
+				self.getImage(image_url, destinationFile, not hide_log, False, None)
 				
 			elif "gif" in pluginAction.props and pluginAction.props["gif"]:
 
@@ -382,7 +382,7 @@ class Plugin(indigo.PluginBase):
 					
 					tempFile = tempDirectory + "/temp_forGif" + str(i) + ".jpg"
 
-					self.getImage(image_url, tempFile, False, True, camera_devId)
+					self.getImage(image_url, tempFile, not hide_log, True, camera_devId)
 
 					im = Image.open(tempFile)
 
@@ -425,5 +425,5 @@ class Plugin(indigo.PluginBase):
 					indigo.server.log("fetched images from '" + camera_name + "', created a animated gif (" + str(total_gif_time) + " seconds, " + str(i) + " frames), saved to: " + destinationFile + " (" + file_size_str +").  Total time to create: " + str(total_time) + " seconds.")
 
 			else:
-				self.getImage(image_url, destinationFile, True, not hide_log, camera_devId)
+				self.getImage(image_url, destinationFile, not hide_log, True, camera_devId)
 
