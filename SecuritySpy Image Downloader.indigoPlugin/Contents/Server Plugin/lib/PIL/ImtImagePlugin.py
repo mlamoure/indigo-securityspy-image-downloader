@@ -19,19 +19,15 @@ import re
 
 from . import Image, ImageFile
 
-# __version__ is deprecated and will be removed in a future version. Use
-# PIL.__version__ instead.
-__version__ = "0.2"
-
-
 #
 # --------------------------------------------------------------------
 
-field = re.compile(br"([a-z]*) ([^ \r\n]*)")
+field = re.compile(rb"([a-z]*) ([^ \r\n]*)")
 
 
 ##
 # Image plugin for IM Tools images.
+
 
 class ImtImageFile(ImageFile.ImageFile):
 
@@ -55,12 +51,12 @@ class ImtImageFile(ImageFile.ImageFile):
             if not s:
                 break
 
-            if s == b'\x0C':
+            if s == b"\x0C":
 
                 # image data begins
-                self.tile = [("raw", (0, 0)+self.size,
-                             self.fp.tell(),
-                             (self.mode, 0, 1))]
+                self.tile = [
+                    ("raw", (0, 0) + self.size, self.fp.tell(), (self.mode, 0, 1))
+                ]
 
                 break
 

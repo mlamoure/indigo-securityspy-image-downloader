@@ -128,6 +128,26 @@
 				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
+			<Field type="menu" id="cam7" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+				<Label>Camera 7 (stiched):</Label>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
+			</Field>
+
+			<Field type="menu" id="cam8" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+				<Label>Camera 8 (stiched):</Label>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
+			</Field>
+
+			<Field type="menu" id="cam9" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+				<Label>Camera 9 (stiched):</Label>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
+			</Field>
+
+			<Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+				<Label>Camera 10 (stiched):</Label>
+				<List class="self" method="CameraListGenerator" dynamicReload="true" />
+			</Field>
+
 			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
 				<Label>Setting an image size will apply for all images being stitched.  If you have cameras with different resolutions, this will make them all the same size.  Size is in height pixels.  Leaving blank will use the default size for each camera.
 				</Label>

@@ -12,7 +12,7 @@ import sys
 import datetime
 import time
 import requests
-import urlparse
+import urllib.parse
 import shutil
 from PIL import Image
 from distutils.version import LooseVersion
@@ -36,7 +36,7 @@ class Plugin(indigo.PluginBase):
 
 	########################################
 	def startup(self):
-		self.debugLog(u"startup called")
+		self.debugLog("startup called")
 		self.version_check()
 
 	def checkForUpdates(self):
@@ -90,10 +90,10 @@ class Plugin(indigo.PluginBase):
 					)
 				)
 		except Exception as exc:
-			self.logger.error(unicode(exc))
+			self.logger.error(str(exc))
 
 	def shutdown(self):
-		self.debugLog(u"shutdown called")
+		self.debugLog("shutdown called")
 
 	# helper functions
 	def prepareTextValue(self, strInput):
@@ -126,7 +126,7 @@ class Plugin(indigo.PluginBase):
 			self.logger.debug("Received StopThread")
 
 	def getImage(self, url, save, log = True, parsePwd = True, devId = None):		
-		parsed = urlparse.urlparse(url)
+		parsed = urllib.parse.urlparse(url)
 
 		if parsePwd:
 			replaced = parsed._replace(netloc="{}:{}@{}".format(parsed.username, "<password removed from log>", parsed.hostname))
@@ -140,7 +140,7 @@ class Plugin(indigo.PluginBase):
 			else:
 				indigo.server.log("fetched image: " + replaced.geturl() + " and saving it to: '" + save + "'")
 
-			self.debugLog(u"fetched image URL: " + replaced.geturl())
+			self.debugLog("fetched image URL: " + replaced.geturl())
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -206,7 +206,7 @@ class Plugin(indigo.PluginBase):
 		tempDirectory = os.path.dirname(destinationFile)
 		images = []
 
-		for i in range(1, 7):
+		for i in range(1, 11):
 			if "cam" + str(i) not in pluginAction.props or pluginAction.props["cam" + str(i)] == "-1" or pluginAction.props["cam" + str(i)] == "":
 				self.debugLog("skipping camera")
 				continue
@@ -259,7 +259,7 @@ class Plugin(indigo.PluginBase):
 
 			try:
 				os.remove(image_file)
-				self.debugLog(u"deleting file " + image_file)
+				self.debugLog("deleting file " + image_file)
 			except:
 				pass
 
@@ -347,7 +347,7 @@ class Plugin(indigo.PluginBase):
 			size = imageSize, 100000
 			image.thumbnail(size, Image.ANTIALIAS)
 			image.save(destinationFile)
-			self.debugLog(u"deleting file " + tempFile)
+			self.debugLog("deleting file " + tempFile)
 			os.remove(tempFile)
 
 			if not hide_log:
@@ -405,7 +405,7 @@ class Plugin(indigo.PluginBase):
 				for n in filenames:
 					frame = Image.open(n)
 					images.append(frame)
-					self.debugLog(u"deleting file " + n)
+					self.debugLog("deleting file " + n)
 					os.remove(n)
 
 				# Save the frames as an animated GIF
