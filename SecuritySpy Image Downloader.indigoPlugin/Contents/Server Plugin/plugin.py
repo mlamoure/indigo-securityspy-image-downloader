@@ -133,14 +133,20 @@ class Plugin(indigo.PluginBase):
 		else:
 			replaced = parsed
 
+		try:
+			save = save.decode("utf-8")
+
+		except (UnicodeDecodeError, AttributeError):
+			pass
+
 		if log or self.debug:
 
 			if not devId is None:
-				indigo.server.log("fetched image from '" + indigo.devices[devId].name + "' and saving it to: '" + save + "'")
+				indigo.server.log("fetched image from '" + indigo.devices[devId].name + "' and saving it to: '" + str(save) + "' ")
 			else:
-				indigo.server.log("fetched image: " + replaced.geturl() + " and saving it to: '" + save + "'")
+				indigo.server.log("fetched image: " + str(replaced.geturl()) + " and saving it to: '" + str(save)  + "'")
 
-			self.debugLog("fetched image URL: " + replaced.geturl())
+			self.debugLog("fetched image URL: " + str(replaced.geturl()))
 
 		try:
 			r = requests.get(url, stream=True, timeout=100)
@@ -341,6 +347,17 @@ class Plugin(indigo.PluginBase):
 
 		if imageSize != -1 and not pluginAction.props["gif"]:
 			tempDirectory = os.path.dirname(destinationFile)
+
+			try:
+				tempDirectory = tempDirectory.decode("utf-8")
+			except (UnicodeDecodeError, AttributeError):
+				pass
+
+			try:
+				destinationFile = destinationFile.decode("utf-8")
+			except (UnicodeDecodeError, AttributeError):
+				pass
+
 			tempFile = tempDirectory + "/temp_forResize.jpg"
 			self.getImage(image_url, tempFile, not hide_log, True, camera_devId)
 			image = Image.open(tempFile)
