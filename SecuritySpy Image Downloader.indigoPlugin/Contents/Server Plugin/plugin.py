@@ -319,6 +319,12 @@ class Plugin(indigo.PluginBase):
 		except:
 			destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 
+		## Python3 added the need to do this.
+		try:
+			destinationFile = destinationFile.decode("utf-8")
+		except (UnicodeDecodeError, AttributeError):
+			pass
+
 		if not os.path.exists(os.path.dirname(destinationFile)):
 			self.logger.error("path does not exist: " + os.path.dirname(destinationFile))
 			return False
@@ -350,11 +356,6 @@ class Plugin(indigo.PluginBase):
 
 			try:
 				tempDirectory = tempDirectory.decode("utf-8")
-			except (UnicodeDecodeError, AttributeError):
-				pass
-
-			try:
-				destinationFile = destinationFile.decode("utf-8")
 			except (UnicodeDecodeError, AttributeError):
 				pass
 
