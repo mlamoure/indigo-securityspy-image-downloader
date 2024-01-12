@@ -149,8 +149,8 @@ class Plugin(indigo.PluginBase):
 			self.debugLog("fetched image URL: " + str(replaced.geturl()))
 
 		try:
-			r = requests.get(url, stream=True, timeout=100)
-
+			r = requests.get(url, stream=True, timeout=100, auth=HTTPDigestAuth(self.securityspy_login, self.securityspy_pass))
+			
 			if r.status_code == 200:
 				with open(save, 'wb') as f:
 					r.raw.decode_content = True
@@ -239,7 +239,7 @@ class Plugin(indigo.PluginBase):
 					if "imageSize" in pluginAction.props and int(pluginAction.props["imageSize"]):
 						indigo.server.log("resized '" + camera_name + "' camera image to max width of " + pluginAction.props["imageSize"] + "px")
 						size = int(pluginAction.props["imageSize"]), 100000
-						image.thumbnail(size, Image.ANTIALIAS)
+						image.thumbnail(size)
 				except:
 					pass
 
