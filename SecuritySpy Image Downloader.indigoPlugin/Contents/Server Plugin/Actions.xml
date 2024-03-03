@@ -3,7 +3,7 @@
 
     <Action id="downloadImage">
         <Name>Download URL/SecuritySpy Image</Name>
-        <CallbackMethod>downloadImage</CallbackMethod>
+        <CallbackMethod>downloadImageAction</CallbackMethod>
 		<ConfigUI>
 			<Field type="menu" id="type" defaultValue="securityspy">
 				<Label>Download:</Label>
@@ -36,7 +36,7 @@
 				<List class="self" method="CameraListGenerator" dynamicReload="true" />
 			</Field>
 
-			<Field id="gif" type="checkbox" defaultValue="false" visibleBindingId="type" visibleBindingValue="securityspy">
+			<Field id="gif" type="checkbox" defaultValue="false">
 				<Label>Create animated GIF:</Label>
 			</Field>
 
@@ -54,12 +54,29 @@
 				<Label>URL (variables accepted %%v:1234567%%):</Label>
 			</Field>
 
-			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false" visibleBindingId="type" visibleBindingValue="securityspy">
+			<Field type="menu" id="useAuth" defaultValue="none" visibleBindingId="type" visibleBindingValue="urlType">
+				<Label>Use Auth:</Label>
+				<List>
+					<Option value="none">none</Option>
+					<Option value="basic">basic</Option>
+					<Option value="digest">digest</Option>
+				</List>
+			</Field>
+
+			<Field id="login" type="textfield" defaultValue="" enabledBindingId="useAuth" enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
+				<Label>Login (ignored if not using auth):</Label>
+			</Field>
+
+			<Field id="password" type="textfield" defaultValue="" enabledBindingId="useAuth" enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
+				<Label>Password (ignored if not using auth):</Label>
+			</Field>
+
+			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
 				<Label>Size is in height pixels.  Leaving blank will use the default size the camera.
 				</Label>
 			</Field>
 
-			<Field id="imageSize" type="textfield" defaultValue="" visibleBindingId="type" visibleBindingValue="securityspy">
+			<Field id="imageSize" type="textfield" defaultValue="">
 				<Label>Maximum image size width (optional):</Label>
 			</Field>
 

@@ -7,8 +7,10 @@
 			</Field>
 
 			<Field id="port" type="textfield" defaultValue="8007">
-				<Label>SecuritySpy Port (http only):</Label>
+				<Label>SecuritySpy Port:</Label>
 			</Field>
+
+			<Field hidden="false" type="checkbox" id="ssl"><Label>Use SSL (note: will not verify SSL cert)?</Label><Description></Description></Field>
 
 			<Field id="login" type="textfield" defaultValue="">
 				<Label>SecuritySpy login:</Label>
