@@ -35,9 +35,10 @@ class Plugin(indigo.PluginBase):
 		self.debug_log("Plugin initialized.")
 
 	########################################
-	def startup(self):
-		self.debugLog("startup called")
-		self.version_check()
+	def on_startup(self):
+		self.debug_log("Plugin startup called")
+		self.check_for_new_version()
+		self.check_for_updates()
 
 	def check_for_updates(self):
 		self.check_for_new_version()
