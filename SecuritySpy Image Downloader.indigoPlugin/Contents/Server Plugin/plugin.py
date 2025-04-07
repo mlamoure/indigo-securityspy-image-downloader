@@ -26,22 +26,21 @@ class Plugin(indigo.PluginBase):
 		self.securityspy_login = pluginPrefs.get("login", None)
 		self.securityspy_pass = pluginPrefs.get("password", None)
 		self.use_ssl = pluginPrefs.get("ssl", None)
-		self.ss_auth_type = None
+		self.ss_auth_type = "basic" if self.securityspy_login else None
 
-		if len(self.securityspy_login) > 0: 
-			self.ss_auth_type = "basic"
+		self.last_update_check = None
+		self.plugin_version = pluginVersion
 
-		self.lastUpdateCheck = None
-
-		self.updateURL()
+		self.update_url()
+		self.debug_log("Plugin initialized.")
 
 	########################################
 	def startup(self):
 		self.debugLog("startup called")
 		self.version_check()
 
-	def checkForUpdates(self):
-		self.version_check()
+	def check_for_updates(self):
+		self.check_for_new_version()
 
 	def updateURL(self):
 		self.configured = (self.securityspy_ip is not None) and (self.securityspy_port is not None)
@@ -67,29 +66,23 @@ class Plugin(indigo.PluginBase):
 
 			self.updateURL()
 
-	def version_check(self):
-		pluginId = self.pluginId
-		self.lastUpdateCheck = datetime.datetime.now()		
+	def check_for_new_version(self):
+		plugin_id = self.pluginId
+		self.last_update_check = datetime.datetime.now()
 
-		# Create some URLs we'll use later on
-		current_version_url = "https://api.indigodomo.com/api/v2/pluginstore/plugin-version-info.json?pluginId={}".format(pluginId)
+		# Fetch version info from Indigo plugin store
+		current_version_url = "https://api.indigodomo.com/api/v2/pluginstore/plugin-version-info.json?pluginId={}".format(plugin_id)
 		store_detail_url = "https://www.indigodomo.com/pluginstore/{}/"
+
 		try:
-			# GET the url from the servers with a short timeout (avoids hanging the plugin)
 			reply = requests.get(current_version_url, timeout=5)
-			# This will raise an exception if the server returned an error
 			reply.raise_for_status()
-			# We now have a good reply so we get the json
 			reply_dict = reply.json()
 			plugin_dict = reply_dict["plugins"][0]
-			# Make sure that the 'latestRelease' element is a dict (could be a string for built-in plugins).
 			latest_release = plugin_dict["latestRelease"]
-			if isinstance(latest_release, dict):
-				# Compare the current version with the one returned in the reply dict
-				if LooseVersion(latest_release["number"]) > LooseVersion(self.pluginVersion):
-				# The release in the store is newer than the current version.
-				# We'll do a couple of things: first, we'll just log it
-				  self.logger.info(
+			# Check for newer release
+			if isinstance(latest_release, dict) and LooseVersion(latest_release["number"]) > LooseVersion(self.plugin_version):
+				self.logger.info(
 					"A new version of the plugin (v{}) is available at: {}".format(
 						latest_release["number"],
 						store_detail_url.format(plugin_dict["id"])
@@ -98,11 +91,11 @@ class Plugin(indigo.PluginBase):
 		except Exception as exc:
 			self.logger.error(str(exc))
 
-	def shutdown(self):
-		self.debugLog("shutdown called")
+	def on_shutdown(self):
+		self.debug_log("Plugin shutdown called")
 
 	# helper functions
-	def prepareTextValue(self, strInput):
+	def prepare_text_value(self, input_string):
 
 		if strInput is None:
 			return strInput
@@ -210,7 +203,7 @@ class Plugin(indigo.PluginBase):
 			destinationFile = self.prepareTextValue(pluginAction.props["destination"])
 
 		if not os.path.exists(os.path.dirname(destinationFile)):
-			self.debugLog("path does not exist: " + os.path.dirname(destinationFile))
+			self.debug_log("Path does not exist: " + os.path.dirname(destinationFile))
 			return False
 
 		tempDirectory = os.path.dirname(destinationFile)
