@@ -98,17 +98,17 @@ class Plugin(indigo.PluginBase):
 	# helper functions
 	def prepare_text_value(self, input_string):
 
-		if strInput is None:
-			return strInput
+		if input_string is None:
+			return input_string
 		else:
-			strInput = strInput.strip()
+			input_string = input_string.strip()
 
-			strInput = self.substitute(strInput)
+			input_string = self.substitute(input_string)
 
 			#fix issue with special characters
-			strInput = strInput.encode('utf8')
+			input_string = input_string.encode('utf8')
 
-			return strInput
+			return input_string
 
 	def runConcurrentThread(self):
 		self.logger.debug("Starting concurrent tread")
