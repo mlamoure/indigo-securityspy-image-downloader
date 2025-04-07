@@ -1,23 +1,17 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-####################
-
-import sys
-sys.path.append('./lib')
-
-import indigo
-
 import os
-import sys
 import datetime
 import time
 import requests
-import urllib.parse
 import shutil
 from PIL import Image
 from distutils.version import LooseVersion
 from requests.auth import HTTPDigestAuth
 from requests.auth import HTTPBasicAuth
+
+try:
+    import indigo
+except ImportError:
+    pass
 
 DEFAULT_UPDATE_FREQUENCY = 24 # frequency of update check
 REQUEST_TIMEOUT = 30
