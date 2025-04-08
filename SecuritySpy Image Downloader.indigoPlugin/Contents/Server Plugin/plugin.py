@@ -36,8 +36,6 @@ class Plugin(indigo.PluginBase):
             plugin_id, plugin_display_name, plugin_version, plugin_prefs
         )
 
-        # Plugin preferences
-        self.debug: bool = plugin_prefs.get("debug", False)
         self.security_spy_ip: str | None = plugin_prefs.get("ip", None)
         self.security_spy_port: str | None = plugin_prefs.get("port", None)
         self.security_spy_login: str | None = plugin_prefs.get("login", None)
