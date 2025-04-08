@@ -45,6 +45,9 @@
             <Field id="gif" type="checkbox" defaultValue="false">
                 <Label>Create animated GIF:</Label>
             </Field>
+            <Field id="reverseFrames" type="checkbox" defaultValue="false" visibleBindingId="gif" visibleBindingValue="true">
+                <Label>Reverse frames order:</Label>
+            </Field>
 
             <Field type="menu" id="gifTime" defaultValue="3" enabledBindingId="gif" enabledBindingValue="true">
                 <Label>Animated GIF duration:</Label>

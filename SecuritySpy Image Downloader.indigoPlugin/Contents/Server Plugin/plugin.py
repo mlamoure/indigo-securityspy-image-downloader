@@ -596,6 +596,8 @@ class Plugin(indigo.PluginBase):
                 self.logger.error("No frames captured; cannot create GIF.")
                 return False
 
+            if plugin_action.props.get("reverseFrames", False):
+                frames.reverse()
             # Save frames as an animated GIF
             frames[0].save(
                 destination_file,
