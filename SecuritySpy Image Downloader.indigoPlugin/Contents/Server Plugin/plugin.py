@@ -537,7 +537,9 @@ class Plugin(indigo.PluginBase):
             # Animated GIF logic
             #
             quality: int = 60
-            # Ensure file has .gif extension
+            # Ensure file is a string and has .gif extension
+            if isinstance(destination_file, bytes):
+                destination_file = destination_file.decode("utf-8")
             if not destination_file.lower().endswith(".gif"):
                 base_path, _ = os.path.splitext(destination_file)
                 destination_file = base_path + ".gif"
