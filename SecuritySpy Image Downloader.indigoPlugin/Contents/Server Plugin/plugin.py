@@ -598,6 +598,7 @@ class Plugin(indigo.PluginBase):
 
             if plugin_action.props.get("reverseFrames", False):
                 frames.reverse()
+                self.logger.info("Reversed frames order for animated GIF.")
             # Save frames as an animated GIF
             frames[0].save(
                 destination_file,
