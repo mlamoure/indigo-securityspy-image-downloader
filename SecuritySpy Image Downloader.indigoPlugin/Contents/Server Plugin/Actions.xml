@@ -39,7 +39,7 @@
 
             <Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
                 <Label>Camera:</Label>
-                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field id="gif" type="checkbox" defaultValue="false">
