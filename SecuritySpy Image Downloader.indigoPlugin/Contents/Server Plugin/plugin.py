@@ -285,8 +285,6 @@ class Plugin(indigo.PluginBase):
             success = self.get_image(
                 url=image_url,
                 save=image_file,
-                log=True,
-                dev_id=camera_dev_id,
                 auth_type=self.security_spy_auth_type,
                 login=self.security_spy_login,
                 password=self.security_spy_pass,
