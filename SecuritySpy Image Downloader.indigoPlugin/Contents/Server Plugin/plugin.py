@@ -122,7 +122,6 @@ class Plugin(indigo.PluginBase):
         cleaned_string = self.substitute(cleaned_string)
         return cleaned_string.encode("utf-8")
 
-
     def get_image(
         self,
         url: str,
@@ -145,12 +144,8 @@ class Plugin(indigo.PluginBase):
             pass
 
         # Log if desired or if debug is on
-        source_desc = (
-            f"'{indigo.devices[dev_id].name}'" if dev_id is not None else url
-        )
-        self.logger.info(
-            f"fetched image from {source_desc} and saving it to: '{save}'"
-        )
+        source_desc = f"'{indigo.devices[dev_id].name}'" if dev_id is not None else url
+        self.logger.info(f"fetched image from {source_desc} and saving it to: '{save}'")
         self.logger.debug(f"fetched image URL: {url}")
 
         # Determine the proper auth handler
@@ -388,244 +383,249 @@ class Plugin(indigo.PluginBase):
 
         return filter_list_ui
 
+    def download_image_action(
+        self, plugin_action: indigo.PluginAction, dev: indigo.Device
+    ) -> bool:
+        """
+        Download a single image (or multiple frames for an animated GIF) from the configured source.
+        Returns True on success, False otherwise.
+        """
+        if not self.configured:
+            return False
 
-def download_image_action(
-    self, plugin_action: indigo.PluginAction, dev: indigo.Device
-) -> bool:
-    """
-    Download a single image (or multiple frames for an animated GIF) from the configured source.
-    Returns True on success, False otherwise.
-    """
-    if not self.configured:
-        return False
+        start_time: float = time.time()
+        hide_log: bool = plugin_action.props.get("hidelog", False)
 
-    start_time: float = time.time()
-    hide_log: bool = plugin_action.props.get("hidelog", False)
-
-    #
-    # --- STEP 1: Determine destination file ---
-    #
-    try:
-        if plugin_action.props["useVariable"]:
-            destination_file = indigo.variables[
-                int(plugin_action.props["destinationVariable"])
-            ].value
-        else:
+        #
+        # --- STEP 1: Determine destination file ---
+        #
+        try:
+            if plugin_action.props["useVariable"]:
+                destination_file = indigo.variables[
+                    int(plugin_action.props["destinationVariable"])
+                ].value
+            else:
+                destination_file = self.prepare_text_value(
+                    plugin_action.props["destination"]
+                )
+        except Exception:
             destination_file = self.prepare_text_value(
                 plugin_action.props["destination"]
             )
-    except Exception:
-        destination_file = self.prepare_text_value(plugin_action.props["destination"])
 
-    if not destination_file:
-        self.logger.error("Destination file path not provided.")
-        return False
-
-    # Check that the destination directory exists
-    dest_dir = os.path.dirname(destination_file)
-    if not os.path.exists(dest_dir):
-        self.logger.error(f"path does not exist: {dest_dir}")
-        return False
-
-    #
-    # --- STEP 2: Determine image source, camera info, and build URL ---
-    #
-    camera_dev_id = None
-    camera_name = ""
-    image_url = ""
-
-    # If using SecuritySpy
-    if plugin_action.props["type"] == "securityspy":
-        # Try to find the desired camera
-        for camera in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera"):
-            if camera.enabled:
-                camera_num = camera.address[
-                    camera.address.find("(") + 1 : camera.address.find(")")
-                ]
-                if camera_num == plugin_action.props["cam1"]:
-                    camera_dev_id = camera.id
-                    camera_name = camera.name
-                    break
-        # Construct the SecuritySpy image URL
-        image_url = (
-            f"{self.security_spy_url}/++image?cameraNum={plugin_action.props['cam1']}"
-        )
-    else:
-        # If not SecuritySpy, assume direct URL
-        raw_url = plugin_action.props.get("url", "")
-        processed_url = self.prepare_text_value(raw_url) or b""
-        image_url = processed_url.decode("utf-8", errors="ignore")
-
-    #
-    # --- STEP 3: Determine requested image size for optional resizing ---
-    #
-    image_size: int = -1
-    try:
-        size_prop = plugin_action.props.get("image_size", "")
-        if size_prop and int(size_prop):
-            image_size = int(size_prop)
-    except ValueError:
-        self.logger.error("error with the resize, must be an integer.")
-
-    #
-    # --- STEP 4: Determine authentication for get_image ---
-    #
-    get_image_auth = self.security_spy_auth_type
-    get_image_login = self.security_spy_login
-    get_image_password = self.security_spy_pass
-    if plugin_action.props["type"] == "urlType":
-        # Possibly override with other auth choices
-        if plugin_action.props.get("useAuth") in (None, "none"):
-            get_image_auth = None
-        else:
-            get_image_auth = plugin_action.props["useAuth"]
-            get_image_login = plugin_action.props.get("login", None)
-            get_image_password = plugin_action.props.get("password", None)
-
-    #
-    # --- Helper function for resizing ---
-    #
-    def resize_image_if_needed(img_path: str, final_path: str, max_width: int) -> None:
-        """
-        Resize the image at img_path if max_width > 0, then save to final_path.
-        """
-        with Image.open(img_path) as img:
-            if max_width > 0:
-                img.thumbnail((max_width, 100000))
-            img.save(final_path)
-
-    #
-    # --- STEP 5: Single image download or animated GIF creation ---
-    #
-    if not plugin_action.props.get("gif"):
-        #
-        # Single image logic
-        #
-        temp_directory = os.path.dirname(destination_file)
-        # Save directly if no resizing is needed, else save to temp first
-        if image_size > 0:
-            temp_path = os.path.join(temp_directory, "temp_forResize.jpg")
-        else:
-            temp_path = destination_file
-
-        try:
-            self.get_image(
-                url=image_url,
-                save=temp_path,
-                log=not hide_log,
-                dev_id=camera_dev_id,
-                auth_type=get_image_auth,
-                login=get_image_login,
-                password=get_image_password,
-            )
-        except Exception:
-            self.logger.info("error fetching the image, not proceeding with resizing")
+        if not destination_file:
+            self.logger.error("Destination file path not provided.")
             return False
 
-        # If resizing was requested, handle it now
-        if image_size > 0 and os.path.exists(temp_path):
-            resize_image_if_needed(temp_path, destination_file, image_size)
-            try:
-                os.remove(temp_path)
-            except Exception:
-                pass
+        # Check that the destination directory exists
+        dest_dir = os.path.dirname(destination_file)
+        if not os.path.exists(dest_dir):
+            self.logger.error(f"path does not exist: {dest_dir}")
+            return False
 
-        # Log success if logs are not hidden
-        if not hide_log:
-            source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
-            if plugin_action.props["type"] == "securityspy":
-                self.logger.info(
-                    f"fetched image from {source_str}, resized, and saved it to: {destination_file}"
-                )
-            else:
-                self.logger.info(
-                    f"fetched image from {source_str}, resized, and saved to: {destination_file}"
-                )
-
-    else:
         #
-        # Animated GIF logic
+        # --- STEP 2: Determine image source, camera info, and build URL ---
         #
-        quality: int = 60
-        # Ensure file has .gif extension
-        if not destination_file.lower().endswith(".gif"):
-            base_path, _ = os.path.splitext(destination_file)
-            destination_file = base_path + ".gif"
+        camera_dev_id = None
+        camera_name = ""
+        image_url = ""
 
-        temp_directory = os.path.dirname(destination_file)
-        filenames: list[str] = []
-        i: int = 0
+        # If using SecuritySpy
+        if plugin_action.props["type"] == "securityspy":
+            # Try to find the desired camera
+            for camera in indigo.devices.iter(
+                filter="org.cynic.indigo.securityspy.camera"
+            ):
+                if camera.enabled:
+                    camera_num = camera.address[
+                        camera.address.find("(") + 1 : camera.address.find(")")
+                    ]
+                    if camera_num == plugin_action.props["cam1"]:
+                        camera_dev_id = camera.id
+                        camera_name = camera.name
+                        break
+            # Construct the SecuritySpy image URL
+            image_url = f"{self.security_spy_url}/++image?cameraNum={plugin_action.props['cam1']}"
+        else:
+            # If not SecuritySpy, assume direct URL
+            raw_url = plugin_action.props.get("url", "")
+            processed_url = self.prepare_text_value(raw_url) or b""
+            image_url = processed_url.decode("utf-8", errors="ignore")
 
-        # Determine how long total to capture GIF frames
+        #
+        # --- STEP 3: Determine requested image size for optional resizing ---
+        #
+        image_size: int = -1
         try:
-            total_gif_time = int(plugin_action.props.get("gifTime", 4))
+            size_prop = plugin_action.props.get("image_size", "")
+            if size_prop and int(size_prop):
+                image_size = int(size_prop)
         except ValueError:
-            total_gif_time = 4
+            self.logger.error("error with the resize, must be an integer.")
 
-        # Capture frames every 2 seconds
-        while i * 2.0 <= total_gif_time:
-            if i != 0:
-                # Wait until we reach the next 2-second interval
-                elapsed = round(time.time() - start_time, 2)
-                sleep_time = (2 * i) - elapsed
-                self.debug_log(f"elapsed={elapsed}s, next frame in {sleep_time}s")
-                time.sleep(max(0, sleep_time))
+        #
+        # --- STEP 4: Determine authentication for get_image ---
+        #
+        get_image_auth = self.security_spy_auth_type
+        get_image_login = self.security_spy_login
+        get_image_password = self.security_spy_pass
+        if plugin_action.props["type"] == "urlType":
+            # Possibly override with other auth choices
+            if plugin_action.props.get("useAuth") in (None, "none"):
+                get_image_auth = None
+            else:
+                get_image_auth = plugin_action.props["useAuth"]
+                get_image_login = plugin_action.props.get("login", None)
+                get_image_password = plugin_action.props.get("password", None)
 
-            temp_filename = os.path.join(temp_directory, f"temp_forGif{i}.jpg")
-            self.get_image(
-                url=image_url,
-                save=temp_filename,
-                log=not hide_log,
-                dev_id=camera_dev_id,
-                auth_type=get_image_auth,
-                login=get_image_login,
-                password=get_image_password,
+        #
+        # --- Helper function for resizing ---
+        #
+        def resize_image_if_needed(
+            img_path: str, final_path: str, max_width: int
+        ) -> None:
+            """
+            Resize the image at img_path if max_width > 0, then save to final_path.
+            """
+            with Image.open(img_path) as img:
+                if max_width > 0:
+                    img.thumbnail((max_width, 100000))
+                img.save(final_path)
+
+        #
+        # --- STEP 5: Single image download or animated GIF creation ---
+        #
+        if not plugin_action.props.get("gif"):
+            #
+            # Single image logic
+            #
+            temp_directory = os.path.dirname(destination_file)
+            # Save directly if no resizing is needed, else save to temp first
+            if image_size > 0:
+                temp_path = os.path.join(temp_directory, "temp_forResize.jpg")
+            else:
+                temp_path = destination_file
+
+            try:
+                self.get_image(
+                    url=image_url,
+                    save=temp_path,
+                    log=not hide_log,
+                    dev_id=camera_dev_id,
+                    auth_type=get_image_auth,
+                    login=get_image_login,
+                    password=get_image_password,
+                )
+            except Exception:
+                self.logger.info(
+                    "error fetching the image, not proceeding with resizing"
+                )
+                return False
+
+            # If resizing was requested, handle it now
+            if image_size > 0 and os.path.exists(temp_path):
+                resize_image_if_needed(temp_path, destination_file, image_size)
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+            # Log success if logs are not hidden
+            if not hide_log:
+                source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
+                if plugin_action.props["type"] == "securityspy":
+                    self.logger.info(
+                        f"fetched image from {source_str}, resized, and saved it to: {destination_file}"
+                    )
+                else:
+                    self.logger.info(
+                        f"fetched image from {source_str}, resized, and saved to: {destination_file}"
+                    )
+
+        else:
+            #
+            # Animated GIF logic
+            #
+            quality: int = 60
+            # Ensure file has .gif extension
+            if not destination_file.lower().endswith(".gif"):
+                base_path, _ = os.path.splitext(destination_file)
+                destination_file = base_path + ".gif"
+
+            temp_directory = os.path.dirname(destination_file)
+            filenames: list[str] = []
+            i: int = 0
+
+            # Determine how long total to capture GIF frames
+            try:
+                total_gif_time = int(plugin_action.props.get("gifTime", 4))
+            except ValueError:
+                total_gif_time = 4
+
+            # Capture frames every 2 seconds
+            while i * 2.0 <= total_gif_time:
+                if i != 0:
+                    # Wait until we reach the next 2-second interval
+                    elapsed = round(time.time() - start_time, 2)
+                    sleep_time = (2 * i) - elapsed
+                    self.debug_log(f"elapsed={elapsed}s, next frame in {sleep_time}s")
+                    time.sleep(max(0, sleep_time))
+
+                temp_filename = os.path.join(temp_directory, f"temp_forGif{i}.jpg")
+                self.get_image(
+                    url=image_url,
+                    save=temp_filename,
+                    log=not hide_log,
+                    dev_id=camera_dev_id,
+                    auth_type=get_image_auth,
+                    login=get_image_login,
+                    password=get_image_password,
+                )
+
+                # Resize if needed
+                if image_size > 0 and os.path.exists(temp_filename):
+                    resize_image_if_needed(temp_filename, temp_filename, image_size)
+
+                filenames.append(temp_filename)
+                i += 1
+
+            # Read frames from disk, then remove the temp files
+            frames: list[Image.Image] = []
+            for f_name in filenames:
+                try:
+                    with Image.open(f_name) as frame_img:
+                        frames.append(frame_img.copy())
+                except Exception:
+                    pass
+                try:
+                    os.remove(f_name)
+                except Exception:
+                    pass
+
+            if not frames:
+                self.logger.error("No frames captured; cannot create GIF.")
+                return False
+
+            # Save frames as an animated GIF
+            frames[0].save(
+                destination_file,
+                save_all=True,
+                append_images=frames[1:],
+                duration=300,
+                loop=0,
+                quality=quality,
             )
 
-            # Resize if needed
-            if image_size > 0 and os.path.exists(temp_filename):
-                resize_image_if_needed(temp_filename, temp_filename, image_size)
+            # Log final details
+            file_size_kb = os.path.getsize(destination_file) >> 10
+            file_size_str = f"{file_size_kb} KB"
+            elapsed = round(time.time() - start_time, 2)
+            if not hide_log:
+                source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
+                self.logger.info(
+                    f"fetched images from {source_str}, created an animated gif "
+                    f"({total_gif_time}s, {i} frames), saved to: {destination_file} "
+                    f"({file_size_str}).  Total time: {elapsed}s."
+                )
 
-            filenames.append(temp_filename)
-            i += 1
-
-        # Read frames from disk, then remove the temp files
-        frames: list[Image.Image] = []
-        for f_name in filenames:
-            try:
-                with Image.open(f_name) as frame_img:
-                    frames.append(frame_img.copy())
-            except Exception:
-                pass
-            try:
-                os.remove(f_name)
-            except Exception:
-                pass
-
-        if not frames:
-            self.logger.error("No frames captured; cannot create GIF.")
-            return False
-
-        # Save frames as an animated GIF
-        frames[0].save(
-            destination_file,
-            save_all=True,
-            append_images=frames[1:],
-            duration=300,
-            loop=0,
-            quality=quality,
-        )
-
-        # Log final details
-        file_size_kb = os.path.getsize(destination_file) >> 10
-        file_size_str = f"{file_size_kb} KB"
-        elapsed = round(time.time() - start_time, 2)
-        if not hide_log:
-            source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
-            self.logger.info(
-                f"fetched images from {source_str}, created an animated gif "
-                f"({total_gif_time}s, {i} frames), saved to: {destination_file} "
-                f"({file_size_str}).  Total time: {elapsed}s."
-            )
-
-    return True
+        return True
