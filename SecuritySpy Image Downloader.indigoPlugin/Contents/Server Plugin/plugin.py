@@ -145,14 +145,13 @@ class Plugin(indigo.PluginBase):
             pass
 
         # Log if desired or if debug is on
-        if log or self.debug:
-            source_desc = (
-                f"'{indigo.devices[dev_id].name}'" if dev_id is not None else url
-            )
-            indigo.server.log(
-                f"fetched image from {source_desc} and saving it to: '{save}'"
-            )
-            self.debug_log(f"fetched image URL: {url}")
+        source_desc = (
+            f"'{indigo.devices[dev_id].name}'" if dev_id is not None else url
+        )
+        self.logger.info(
+            f"fetched image from {source_desc} and saving it to: '{save}'"
+        )
+        self.logger.debug(f"fetched image URL: {url}")
 
         # Determine the proper auth handler
         if auth_type is None:
@@ -520,7 +519,7 @@ def download_image_action(
                 password=get_image_password,
             )
         except Exception:
-            indigo.server.log("error fetching the image, not proceeding with resizing")
+            self.logger.info("error fetching the image, not proceeding with resizing")
             return False
 
         # If resizing was requested, handle it now
@@ -535,11 +534,11 @@ def download_image_action(
         if not hide_log:
             source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
             if plugin_action.props["type"] == "securityspy":
-                indigo.server.log(
+                self.logger.info(
                     f"fetched image from {source_str}, resized, and saved it to: {destination_file}"
                 )
             else:
-                indigo.server.log(
+                self.logger.info(
                     f"fetched image from {source_str}, resized, and saved to: {destination_file}"
                 )
 
@@ -623,7 +622,7 @@ def download_image_action(
         elapsed = round(time.time() - start_time, 2)
         if not hide_log:
             source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
-            indigo.server.log(
+            self.logger.info(
                 f"fetched images from {source_str}, created an animated gif "
                 f"({total_gif_time}s, {i} frames), saved to: {destination_file} "
                 f"({file_size_str}).  Total time: {elapsed}s."
