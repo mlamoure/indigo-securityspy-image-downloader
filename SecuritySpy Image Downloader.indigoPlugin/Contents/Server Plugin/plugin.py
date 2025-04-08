@@ -457,11 +457,12 @@ class Plugin(indigo.PluginBase):
         #
         image_size: int = -1
         try:
-            size_prop = plugin_action.props.get("image_size", "")
+            size_prop = plugin_action.props.get("imageSize", "")
             if size_prop and int(size_prop):
                 image_size = int(size_prop)
         except ValueError:
             self.logger.error("error with the resize, must be an integer.")
+            image_size = -1
 
         #
         # --- STEP 4: Determine authentication for get_image ---
@@ -533,15 +534,9 @@ class Plugin(indigo.PluginBase):
             # Log success if logs are not hidden
             if not hide_log:
                 source_str = f"'{camera_name}'" if camera_name else f"'{image_url}'"
-                if plugin_action.props["type"] == "securityspy":
-                    self.logger.info(
-                        f"fetched image from {source_str}, resized, and saved it to: {destination_file}"
-                    )
-                else:
-                    self.logger.info(
-                        f"fetched image from {source_str}, resized, and saved to: {destination_file}"
-                    )
-
+                self.logger.info(
+                    f"fetched image from {source_str}, resized, and saved it to: {destination_file}"
+                )
         else:
             #
             # Animated GIF logic
