@@ -240,6 +240,8 @@ class Plugin(indigo.PluginBase):
                 plugin_action.props["destination"]
             )
 
+        if isinstance(destination_file, bytes):
+            destination_file = destination_file.decode("utf-8")
         if not destination_file:
             self.logger.error("Destination file path not provided.")
             return False
