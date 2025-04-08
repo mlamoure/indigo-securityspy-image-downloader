@@ -126,8 +126,6 @@ class Plugin(indigo.PluginBase):
         self,
         url: str,
         save: str,
-        log: bool = True,
-        dev_id: int | None = None,
         auth_type: str | None = None,
         login: str | None = None,
         password: str | None = None,
@@ -144,8 +142,7 @@ class Plugin(indigo.PluginBase):
             pass
 
         # Log if desired or if debug is on
-        source_desc = f"'{indigo.devices[dev_id].name}'" if dev_id is not None else url
-        self.logger.info(f"fetched image from {source_desc} and saving it to: '{save}'")
+        self.logger.info(f"fetched image from {url} and saving it to: '{save}'")
         self.logger.debug(f"fetched image URL: {url}")
 
         # Determine the proper auth handler
