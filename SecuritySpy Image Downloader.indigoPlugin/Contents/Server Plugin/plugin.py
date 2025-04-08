@@ -506,8 +506,6 @@ class Plugin(indigo.PluginBase):
                 self.get_image(
                     url=image_url,
                     save=temp_path,
-                    log=not hide_log,
-                    dev_id=camera_dev_id,
                     auth_type=get_image_auth,
                     login=get_image_login,
                     password=get_image_password,
@@ -565,8 +563,6 @@ class Plugin(indigo.PluginBase):
                 self.get_image(
                     url=image_url,
                     save=temp_filename,
-                    log=not hide_log,
-                    dev_id=camera_dev_id,
                     auth_type=get_image_auth,
                     login=get_image_login,
                     password=get_image_password,
