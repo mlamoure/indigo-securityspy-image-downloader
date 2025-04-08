@@ -3,178 +3,195 @@
 
     <Action id="downloadImage">
         <Name>Download URL/SecuritySpy Image</Name>
-        <CallbackMethod>downloadImageAction</CallbackMethod>
-		<ConfigUI>
-			<Field type="menu" id="type" defaultValue="securityspy">
-				<Label>Download:</Label>
-				<List>
-					<Option value="securityspy">SecuritySpy Image</Option>
-					<Option value="urlType">Image via URL</Option>
-				</List>
-			</Field>
+        <CallbackMethod>download_image_action</CallbackMethod>
+        <ConfigUI>
+            <Field type="menu" id="type" defaultValue="securityspy">
+                <Label>Download:</Label>
+                <List>
+                    <Option value="securityspy">SecuritySpy Image</Option>
+                    <Option value="urlType">Image via URL</Option>
+                </List>
+            </Field>
 
-			<Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
-				<Label>You can choose to provide the path and filename of the resulting downloaded image via variable or by typing into this action dialog.  Using a variable is easiest so that it can be referenced in other actions, such as sending a Pushover notification.
-				</Label>
-			</Field>
+            <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
+                   alignWithControl="false">
+                <Label>You can choose to provide the path and filename of the resulting downloaded image via variable or
+                    by typing into this action dialog. Using a variable is easiest so that it can be referenced in other
+                    actions, such as sending a Pushover notification.
+                </Label>
+            </Field>
 
-			<Field id="useVariable" type="checkbox" defaultValue="false">
-				<Label>Use a variable for destination location:</Label>
-			</Field>
+            <Field id="useVariable" type="checkbox" defaultValue="false">
+                <Label>Use a variable for destination location:</Label>
+            </Field>
 
-			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg" visibleBindingId="useVariable" visibleBindingValue="false">
-				<Label>Destination location and filename (full path with file extension (jpg or gif)):</Label>
-			</Field>
+            <Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg"
+                   visibleBindingId="useVariable" visibleBindingValue="false">
+                <Label>Destination location and filename (full path with file extension (jpg or gif)):</Label>
+            </Field>
 
-			<Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
-				<Label>Destination variable containing location and filename (full path with file extension (jpg or gif)):</Label>
-				<List class="indigo.variables" filter=""/>
-			</Field>
+            <Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
+                <Label>Destination variable containing location and filename (full path with file extension (jpg or
+                    gif)):
+                </Label>
+                <List class="indigo.variables" filter=""/>
+            </Field>
 
-			<Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
-				<Label>Camera:</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
+                <Label>Camera:</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field id="gif" type="checkbox" defaultValue="false">
-				<Label>Create animated GIF:</Label>
-			</Field>
+            <Field id="gif" type="checkbox" defaultValue="false">
+                <Label>Create animated GIF:</Label>
+            </Field>
 
-			<Field type="menu" id="gifTime" defaultValue="3" enabledBindingId="gif" enabledBindingValue="true">
-				<Label>Animated GIF duration:</Label>
-				<List>
-					<Option value="2">2 seconds, .5fps (2 frames)</Option>
-					<Option value="4">4 seconds, .5fps (3 frames)</Option>
-					<Option value="6">6 seconds, .5fps (4 frames)</Option>
-					<Option value="10">10 seconds, .5fps (6 frames)</Option>
-				</List>
-			</Field>
+            <Field type="menu" id="gifTime" defaultValue="3" enabledBindingId="gif" enabledBindingValue="true">
+                <Label>Animated GIF duration:</Label>
+                <List>
+                    <Option value="2">2 seconds, .5fps (2 frames)</Option>
+                    <Option value="4">4 seconds, .5fps (3 frames)</Option>
+                    <Option value="6">6 seconds, .5fps (4 frames)</Option>
+                    <Option value="10">10 seconds, .5fps (6 frames)</Option>
+                </List>
+            </Field>
 
-			<Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type" visibleBindingValue="urlType">
-				<Label>URL (variables accepted %%v:1234567%%):</Label>
-			</Field>
+            <Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type"
+                   visibleBindingValue="urlType">
+                <Label>URL (variables accepted %%v:1234567%%):</Label>
+            </Field>
 
-			<Field type="menu" id="useAuth" defaultValue="none" visibleBindingId="type" visibleBindingValue="urlType">
-				<Label>Use Auth:</Label>
-				<List>
-					<Option value="none">none</Option>
-					<Option value="basic">basic</Option>
-					<Option value="digest">digest</Option>
-				</List>
-			</Field>
+            <Field type="menu" id="useAuth" defaultValue="none" visibleBindingId="type" visibleBindingValue="urlType">
+                <Label>Use Auth:</Label>
+                <List>
+                    <Option value="none">none</Option>
+                    <Option value="basic">basic</Option>
+                    <Option value="digest">digest</Option>
+                </List>
+            </Field>
 
-			<Field id="login" type="textfield" defaultValue="" enabledBindingId="useAuth" enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
-				<Label>Login (ignored if not using auth):</Label>
-			</Field>
+            <Field id="login" type="textfield" defaultValue="" enabledBindingId="useAuth"
+                   enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
+                <Label>Login (ignored if not using auth):</Label>
+            </Field>
 
-			<Field id="password" type="textfield" defaultValue="" enabledBindingId="useAuth" enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
-				<Label>Password (ignored if not using auth):</Label>
-			</Field>
+            <Field id="password" type="textfield" defaultValue="" enabledBindingId="useAuth"
+                   enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
+                <Label>Password (ignored if not using auth):</Label>
+            </Field>
 
-			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
-				<Label>Size is in height pixels.  Leaving blank will use the default size the camera.
-				</Label>
-			</Field>
+            <Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small"
+                   alignWithControl="false">
+                <Label>Size is in height pixels. Leaving blank will use the default size the camera.
+                </Label>
+            </Field>
 
-			<Field id="imageSize" type="textfield" defaultValue="">
-				<Label>Maximum image size width (optional):</Label>
-			</Field>
+            <Field id="imageSize" type="textfield" defaultValue="">
+                <Label>Maximum image size width (optional):</Label>
+            </Field>
 
-			<Field id="hidelog" type="checkbox" defaultValue="false">
-				<Label>Hide Execution from Indigo Log:</Label>
-			</Field>
+            <Field id="hidelog" type="checkbox" defaultValue="false">
+                <Label>Hide Execution from Indigo Log:</Label>
+            </Field>
 
-		</ConfigUI>
+        </ConfigUI>
     </Action>
 
 
     <Action id="stitchImage">
         <Name>Download and Stitch Multiple SecuritySpy Images</Name>
-        <CallbackMethod>stitchImageAction</CallbackMethod>
-		<ConfigUI>
+        <CallbackMethod>stitch_image_action</CallbackMethod>
+        <ConfigUI>
 
-			<Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
-				<Label>You can choose to provide the path and filename of the resulting stitched image via variable or by typing into this action dialog.  Using a variable is easiest so that it can be referenced in other actions, such as sending a Pushover notification.
-				</Label>
-			</Field>
+            <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
+                   alignWithControl="false">
+                <Label>You can choose to provide the path and filename of the resulting stitched image via variable or
+                    by typing into this action dialog. Using a variable is easiest so that it can be referenced in other
+                    actions, such as sending a Pushover notification.
+                </Label>
+            </Field>
 
-			<Field id="useVariable" type="checkbox" defaultValue="false">
-				<Label>Use a variable for destination location:</Label>
-			</Field>
+            <Field id="useVariable" type="checkbox" defaultValue="false">
+                <Label>Use a variable for destination location:</Label>
+            </Field>
 
-			<Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg" visibleBindingId="useVariable" visibleBindingValue="false">
-				<Label>Destination location and filename (full path):</Label>
-			</Field>
+            <Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg"
+                   visibleBindingId="useVariable" visibleBindingValue="false">
+                <Label>Destination location and filename (full path):</Label>
+            </Field>
 
-			<Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
-				<Label>Destination variable containing location and filename (full path):</Label>
-				<List class="indigo.variables" filter=""/>
-			</Field>
+            <Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
+                <Label>Destination variable containing location and filename (full path):</Label>
+                <List class="indigo.variables" filter=""/>
+            </Field>
 
-			<Field type="menu" id="cam1" defaultValue="0">
-				<Label>Camera 1:</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam1" defaultValue="0">
+                <Label>Camera 1:</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam2" defaultValue="1">
-				<Label>Camera 2 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam2" defaultValue="1">
+                <Label>Camera 2 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field id="showMore" type="checkbox" defaultValue="false">
-				<Label>Show More Cameras (Make dialog box larger to see)</Label>
-			</Field>
+            <Field id="showMore" type="checkbox" defaultValue="false">
+                <Label>Show More Cameras (Make dialog box larger to see)</Label>
+            </Field>
 
-			<Field type="menu" id="cam3" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 3 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam3" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 3 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam4" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 4 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam4" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 4 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam5" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 5 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam5" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 5 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam6" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 6 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam6" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 6 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam7" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 7 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam7" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 7 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam8" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 8 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam8" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 8 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam9" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 9 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam9" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 9 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-				<Label>Camera 10 (stiched):</Label>
-				<List class="self" method="CameraListGenerator" dynamicReload="true" />
-			</Field>
+            <Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
+                <Label>Camera 10 (stiched):</Label>
+                <List class="self" method="CameraListGenerator" dynamicReload="true"/>
+            </Field>
 
-			<Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small" alignWithControl="false">
-				<Label>Setting an image size will apply for all images being stitched.  If you have cameras with different resolutions, this will make them all the same size.  Size is in height pixels.  Leaving blank will use the default size for each camera.
-				</Label>
-			</Field>
+            <Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small"
+                   alignWithControl="false">
+                <Label>Setting an image size will apply for all images being stitched. If you have cameras with
+                    different resolutions, this will make them all the same size. Size is in height pixels. Leaving
+                    blank will use the default size for each camera.
+                </Label>
+            </Field>
 
-			<Field id="imageSize" type="textfield" defaultValue="">
-				<Label>Maximum image size width (optional):</Label>
-			</Field>
+            <Field id="imageSize" type="textfield" defaultValue="">
+                <Label>Maximum image size width (optional):</Label>
+            </Field>
 
-		</ConfigUI>
+        </ConfigUI>
     </Action>
 
 </Actions>
