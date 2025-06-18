@@ -500,7 +500,7 @@ class Plugin(indigo.PluginBase):
             temp_directory = os.path.dirname(destination_file)
             # Save directly if no resizing is needed, else save to temp first
             if image_size > 0:
-                temp_path = os.path.join(temp_directory, "temp_forResize.jpg")
+                temp_path = os.path.join(temp_directory, b"temp_forResize.jpg")
             else:
                 temp_path = destination_file
 
