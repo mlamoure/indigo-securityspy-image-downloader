@@ -24,13 +24,15 @@ MAX_CAMERAS = 10  # Maximum cameras supported for stitching
 SECURITYSPY_PLUGINS = {
     'cynical': {
         'filter': 'org.cynic.indigo.securityspy.camera',
-        'name': 'Cynical SecuritySpy Plugin',
-        'address_parser': '_parse_cynical_address'
+        'name': 'Cynical SecuritySpy',
+        'address_parser': '_parse_cynical_address',
+        'device_type_filter': None  # No device type filtering needed
     },
     'flyingdiver': {
         'filter': 'com.flyingdiver.indigoplugin.securityspy',
-        'name': 'FlyingDiver SecuritySpy Plugin', 
-        'address_parser': '_parse_flyingdiver_address'
+        'name': 'Spy Connect', 
+        'address_parser': '_parse_flyingdiver_address',
+        'device_type_filter': 'spyCamera'  # Only include camera devices, exclude spyServer
     }
 }
 
@@ -569,6 +571,12 @@ class Plugin(indigo.PluginBase):
                 
                 for camera in indigo.devices.iter(filter=device_filter):
                     if camera.enabled:
+                        # Apply device type filtering if specified
+                        device_type_filter = plugin_config.get('device_type_filter')
+                        if device_type_filter and hasattr(camera, 'deviceTypeId'):
+                            if camera.deviceTypeId != device_type_filter:
+                                continue  # Skip devices that don't match the required type
+                        
                         camera_num = parser_method(camera.address)
                         if camera_num:
                             discovered_cameras.append((
@@ -644,6 +652,12 @@ class Plugin(indigo.PluginBase):
                 
                 for camera in indigo.devices.iter(filter=device_filter):
                     if camera.enabled:
+                        # Apply device type filtering if specified
+                        device_type_filter = plugin_config.get('device_type_filter')
+                        if device_type_filter and hasattr(camera, 'deviceTypeId'):
+                            if camera.deviceTypeId != device_type_filter:
+                                continue  # Skip devices that don't match the required type
+                        
                         device_cam_num = parser_method(camera.address)
                         if device_cam_num == camera_num:
                             return camera.id, camera.name

@@ -79,6 +79,13 @@ class TestMultiPluginSupport(unittest.TestCase):
         flyingdiver_config = SECURITYSPY_PLUGINS['flyingdiver']
         self.assertEqual(flyingdiver_config['filter'], 'com.flyingdiver.indigoplugin.securityspy')
         self.assertEqual(flyingdiver_config['address_parser'], '_parse_flyingdiver_address')
+        self.assertEqual(flyingdiver_config['device_type_filter'], 'spyCamera')
+        self.assertEqual(flyingdiver_config['name'], 'Spy Connect')
+        
+        # Test Cynical plugin config
+        cynical_config = SECURITYSPY_PLUGINS['cynical']
+        self.assertIsNone(cynical_config['device_type_filter'])  # No filtering for Cynical
+        self.assertEqual(cynical_config['name'], 'Cynical SecuritySpy')
     
     def test_parse_cynical_address(self):
         """Test parsing of Cynical plugin camera addresses."""
@@ -183,11 +190,13 @@ class TestMultiPluginSupport(unittest.TestCase):
                 mock_camera1.enabled = True
                 mock_camera1.name = "Garage Camera"
                 mock_camera1.address = "server123:01"
+                mock_camera1.deviceTypeId = "spyCamera"  # Camera device
                 
                 mock_camera2 = Mock()
                 mock_camera2.enabled = True
                 mock_camera2.name = "Driveway Camera"
                 mock_camera2.address = "server123:05"
+                mock_camera2.deviceTypeId = "spyCamera"  # Camera device
                 
                 return [mock_camera1, mock_camera2]
             return []
@@ -215,6 +224,7 @@ class TestMultiPluginSupport(unittest.TestCase):
                 mock_camera2.enabled = True
                 mock_camera2.name = "FlyingDiver Camera 2"
                 mock_camera2.address = "server123:02"
+                mock_camera2.deviceTypeId = "spyCamera"  # Camera device
                 return [mock_camera2]
             return []
         
@@ -295,6 +305,7 @@ class TestMultiPluginSupport(unittest.TestCase):
                 mock_camera2.enabled = True
                 mock_camera2.name = "FlyingDiver Camera"
                 mock_camera2.address = "server123:03"
+                mock_camera2.deviceTypeId = "spyCamera"
                 mock_camera2.id = 67890
                 return [mock_camera2]
             return []
@@ -331,6 +342,7 @@ class TestMultiPluginSupport(unittest.TestCase):
                 mock_camera2.enabled = True
                 mock_camera2.name = "FlyingDiver Camera"
                 mock_camera2.address = "server123:02"
+                mock_camera2.deviceTypeId = "spyCamera"
                 return [mock_camera2]
             return []
         
@@ -350,11 +362,45 @@ class TestMultiPluginSupport(unittest.TestCase):
         self.assertEqual(camera_entries[1][0], "2")  # Camera 2 second
         
         # Verify plugin names are included in display names
-        self.assertIn("Cynical SecuritySpy Plugin", camera_entries[0][1])
-        self.assertIn("FlyingDiver SecuritySpy Plugin", camera_entries[1][1])
+        self.assertIn("Cynical SecuritySpy", camera_entries[0][1])
+        self.assertIn("Spy Connect", camera_entries[1][1])
         
         # Verify "none" option is present
         self.assertIn(("-1", "none"), camera_list)
+    
+    @patch('plugin.indigo.devices.iter')
+    def test_discover_cameras_flyingdiver_device_type_filtering(self, mock_iter):
+        """Test that FlyingDiver plugin filters out spyServer devices and only includes spyCamera devices."""
+        def mock_device_iter(filter=None):
+            if filter == 'com.flyingdiver.indigoplugin.securityspy':
+                # Mock a camera device (should be included)
+                mock_camera = Mock()
+                mock_camera.enabled = True
+                mock_camera.name = "Front Door Camera"
+                mock_camera.address = "server123:01"
+                mock_camera.deviceTypeId = "spyCamera"
+                
+                # Mock a server device (should be excluded)
+                mock_server = Mock()
+                mock_server.enabled = True
+                mock_server.name = "SecuritySpy Server"
+                mock_server.address = "10.66.0.95:8006"
+                mock_server.deviceTypeId = "spyServer"
+                
+                return [mock_camera, mock_server]
+            return []
+        
+        mock_iter.side_effect = mock_device_iter
+        
+        cameras = self.plugin._discover_cameras()
+        
+        # Should only find the camera, not the server
+        self.assertEqual(len(cameras), 1)
+        self.assertIn(("1", "Front Door Camera", "flyingdiver"), cameras)
+        
+        # Verify server device is not included
+        server_found = any("SecuritySpy Server" in camera[1] for camera in cameras)
+        self.assertFalse(server_found, "spyServer device should be filtered out")
 
 
 if __name__ == '__main__':
