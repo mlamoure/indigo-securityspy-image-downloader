@@ -391,8 +391,14 @@ class Plugin(indigo.PluginBase):
             # Locate the camera device using multi-plugin support
             camera_dev_id, camera_name = self._get_camera_info(cam_prop)
 
+            # Extract camera number from camera ID (handle both old and new formats)
+            if ':' in cam_prop:
+                camera_num = cam_prop.split(':', 1)[1]
+            else:
+                camera_num = cam_prop
+
             # Build the URL for this camera
-            image_url = f"{self.security_spy_url}/++image?cameraNum={cam_prop}"
+            image_url = f"{self.security_spy_url}/++image?cameraNum={camera_num}"
             image_file = os.path.join(temp_directory, f"temp{i}.jpg")
 
             # Fetch each camera image
@@ -497,10 +503,20 @@ class Plugin(indigo.PluginBase):
             # Add plugin identifier to camera name for disambiguation
             plugin_name = SECURITYSPY_PLUGINS[plugin_type]['name']
             display_name = f"{camera_name} ({plugin_name})"
-            camera_options.append((camera_num, display_name))
+            # Create unique ID by combining plugin type and camera number
+            unique_camera_id = f"{plugin_type}:{camera_num}"
+            camera_options.append((unique_camera_id, display_name))
 
         # Sort cameras by number for consistent ordering
-        camera_options.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 999)
+        def sort_key(option):
+            camera_id = option[0]
+            if ':' in camera_id:
+                # Extract camera number from plugin:number format
+                camera_num = camera_id.split(':', 1)[1]
+                return int(camera_num) if camera_num.isdigit() else 999
+            return int(camera_id) if camera_id.isdigit() else 999
+        
+        camera_options.sort(key=sort_key)
 
         # If no cameras found, create numbered placeholders
         # This provides a fallback when no SecuritySpy plugins are installed
@@ -632,20 +648,27 @@ class Plugin(indigo.PluginBase):
             
         return destination_file
     
-    def _get_camera_info(self, camera_num: str) -> Tuple[Optional[int], str]:
+    def _get_camera_info(self, camera_id: str) -> Tuple[Optional[int], str]:
         """
-        Find camera device information by camera number across all supported plugins.
-        
-        This method searches through all supported SecuritySpy plugins to find
-        a camera with the specified number.
+        Find camera device information by camera ID.
         
         Args:
-            camera_num: Camera number string to search for
+            camera_id: Camera ID in format "plugin_type:camera_num" or just "camera_num" for backwards compatibility
             
         Returns:
             Tuple of (camera_device_id, camera_name)
         """
-        for plugin_key, plugin_config in SECURITYSPY_PLUGINS.items():
+        # Parse camera ID - handle both new format (plugin:number) and old format (just number)
+        if ':' in camera_id:
+            plugin_type, camera_num = camera_id.split(':', 1)
+            # Search only in the specified plugin
+            target_plugins = {plugin_type: SECURITYSPY_PLUGINS[plugin_type]} if plugin_type in SECURITYSPY_PLUGINS else {}
+        else:
+            # Legacy format - search all plugins
+            camera_num = camera_id
+            target_plugins = SECURITYSPY_PLUGINS
+        
+        for plugin_key, plugin_config in target_plugins.items():
             try:
                 device_filter = plugin_config['filter']
                 parser_method = getattr(self, plugin_config['address_parser'])
@@ -679,8 +702,15 @@ class Plugin(indigo.PluginBase):
         """
         if plugin_action.props.get("type") == "securityspy":
             # SecuritySpy camera image
-            camera_num = plugin_action.props.get("cam1", "0")
-            _, camera_name = self._get_camera_info(camera_num)
+            camera_id = plugin_action.props.get("cam1", "0")
+            _, camera_name = self._get_camera_info(camera_id)
+            
+            # Extract camera number from camera ID (handle both old and new formats)
+            if ':' in camera_id:
+                camera_num = camera_id.split(':', 1)[1]
+            else:
+                camera_num = camera_id
+                
             image_url = f"{self.security_spy_url}/++image?cameraNum={camera_num}"
             return image_url, camera_name
         else:

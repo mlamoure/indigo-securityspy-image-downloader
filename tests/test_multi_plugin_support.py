@@ -357,9 +357,9 @@ class TestMultiPluginSupport(unittest.TestCase):
         camera_entries = [entry for entry in camera_list if entry[0] != "-1"]
         self.assertEqual(len(camera_entries), 2)
         
-        # Verify cameras are sorted by number
-        self.assertEqual(camera_entries[0][0], "1")  # Camera 1 first
-        self.assertEqual(camera_entries[1][0], "2")  # Camera 2 second
+        # Verify cameras are sorted by number (with new unique ID format)
+        self.assertEqual(camera_entries[0][0], "cynical:1")  # Camera 1 first
+        self.assertEqual(camera_entries[1][0], "flyingdiver:2")  # Camera 2 second
         
         # Verify plugin names are included in display names
         self.assertIn("Cynical SecuritySpy", camera_entries[0][1])

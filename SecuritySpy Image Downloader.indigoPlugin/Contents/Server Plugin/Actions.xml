@@ -24,8 +24,8 @@
             </Field>
             
             <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
-                   alignWithControl="false">
-                <Label>Choose how to specify the destination file path. Variables are recommended for reuse in other actions.</Label>
+                   alignText="left">
+                <Label>Specify destination file path. Variables recommended for reuse.</Label>
             </Field>
 
             <Field id="useVariable" type="checkbox" defaultValue="false">
@@ -46,7 +46,7 @@
 
             <Field type="menu" id="cam1" defaultValue="0" visibleBindingId="type" visibleBindingValue="securityspy">
                 <Label>Camera:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <!-- GIF Animation Options -->
@@ -132,8 +132,8 @@
             </Field>
             
             <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
-                   alignWithControl="false">
-                <Label>Choose how to specify the destination file path. Variables are recommended for reuse in other actions.</Label>
+                   alignText="left">
+                <Label>Specify destination file path. Variables recommended for reuse.</Label>
             </Field>
 
             <Field id="useVariable" type="checkbox" defaultValue="false">
@@ -159,12 +159,12 @@
             
             <Field type="menu" id="cam1" defaultValue="0">
                 <Label>Camera 1 (top):</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam2" defaultValue="1">
                 <Label>Camera 2:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field id="showMore" type="checkbox" defaultValue="false">
@@ -174,42 +174,42 @@
 
             <Field type="menu" id="cam3" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 3:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam4" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 4:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam5" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 5:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam6" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 6:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam7" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 7:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam8" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 8:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam9" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 9:</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
                 <Label>Camera 10 (bottom):</Label>
-                <List class="self" method="camera_list_generator" dynamicReload="true"/>
+                <List class="self" method="camera_list_generator"/>
             </Field>
 
             <!-- Processing Options -->
