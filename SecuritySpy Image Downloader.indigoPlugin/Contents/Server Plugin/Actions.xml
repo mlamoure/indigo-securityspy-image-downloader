@@ -5,35 +5,42 @@
         <Name>Download URL/SecuritySpy Image</Name>
         <CallbackMethod>download_image_action</CallbackMethod>
         <ConfigUI>
+            <!-- Source Configuration -->
+            <Field type="separator" id="sourceSection">
+                <Label>Image Source</Label>
+            </Field>
+            
             <Field type="menu" id="type" defaultValue="securityspy">
-                <Label>Download:</Label>
+                <Label>Source Type:</Label>
                 <List>
-                    <Option value="securityspy">SecuritySpy Image</Option>
-                    <Option value="urlType">Image via URL</Option>
+                    <Option value="securityspy">SecuritySpy Camera</Option>
+                    <Option value="urlType">Custom URL</Option>
                 </List>
             </Field>
 
+            <!-- Output Configuration -->
+            <Field type="separator" id="outputSection">
+                <Label>Output Settings</Label>
+            </Field>
+            
             <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
                    alignWithControl="false">
-                <Label>You can choose to provide the path and filename of the resulting downloaded image via variable or
-                    by typing into this action dialog. Using a variable is easiest so that it can be referenced in other
-                    actions, such as sending a Pushover notification.
-                </Label>
+                <Label>Choose how to specify the destination file path. Variables are recommended for reuse in other actions.</Label>
             </Field>
 
             <Field id="useVariable" type="checkbox" defaultValue="false">
-                <Label>Use a variable for destination location:</Label>
+                <Label>Use variable for file path:</Label>
             </Field>
 
             <Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg"
                    visibleBindingId="useVariable" visibleBindingValue="false">
-                <Label>Destination location and filename (full path with file extension (jpg or gif)):</Label>
+                <Label>File Path:</Label>
+                <Description>Full path with extension (.jpg or .gif)</Description>
             </Field>
 
             <Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
-                <Label>Destination variable containing location and filename (full path with file extension (jpg or
-                    gif)):
-                </Label>
+                <Label>Variable Name:</Label>
+                <Description>Variable containing full file path with extension</Description>
                 <List class="indigo.variables" filter=""/>
             </Field>
 
@@ -42,59 +49,73 @@
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
+            <!-- GIF Animation Options -->
+            <Field type="separator" id="gifSection">
+                <Label>Animation Options</Label>
+            </Field>
+            
             <Field id="gif" type="checkbox" defaultValue="false">
-                <Label>Create animated GIF:</Label>
+                <Label>Create animated GIF</Label>
+                <Description>Captures multiple frames over time</Description>
             </Field>
-            <Field id="reverseFrames" type="checkbox" defaultValue="false" visibleBindingId="gif" visibleBindingValue="true">
-                <Label>Reverse frames order:</Label>
-            </Field>
-
+            
             <Field type="menu" id="gifTime" defaultValue="3" enabledBindingId="gif" enabledBindingValue="true">
-                <Label>Animated GIF duration:</Label>
+                <Label>Duration:</Label>
                 <List>
-                    <Option value="2">2 seconds, .5fps (2 frames)</Option>
-                    <Option value="4">4 seconds, .5fps (3 frames)</Option>
-                    <Option value="6">6 seconds, .5fps (4 frames)</Option>
-                    <Option value="10">10 seconds, .5fps (6 frames)</Option>
+                    <Option value="2">2 seconds (2 frames)</Option>
+                    <Option value="4">4 seconds (3 frames)</Option>
+                    <Option value="6">6 seconds (4 frames)</Option>
+                    <Option value="10">10 seconds (6 frames)</Option>
                 </List>
             </Field>
+            
+            <Field id="reverseFrames" type="checkbox" defaultValue="false" visibleBindingId="gif" visibleBindingValue="true">
+                <Label>Reverse frame order</Label>
+                <Description>Play animation backwards</Description>
+            </Field>
 
+            <!-- Custom URL Configuration -->
+            <Field type="separator" id="urlSection" visibleBindingId="type" visibleBindingValue="urlType">
+                <Label>URL Configuration</Label>
+            </Field>
+            
             <Field id="url" type="textfield" defaultValue="http://" visibleBindingId="type"
                    visibleBindingValue="urlType">
-                <Label>URL (variables accepted %%v:1234567%%):</Label>
+                <Label>Image URL:</Label>
+                <Description>Supports variables: %%v:variableId%%</Description>
             </Field>
 
             <Field type="menu" id="useAuth" defaultValue="none" visibleBindingId="type" visibleBindingValue="urlType">
-                <Label>Use Auth:</Label>
+                <Label>Authentication:</Label>
                 <List>
-                    <Option value="none">none</Option>
-                    <Option value="basic">basic</Option>
-                    <Option value="digest">digest</Option>
+                    <Option value="none">None</Option>
+                    <Option value="basic">Basic Auth</Option>
+                    <Option value="digest">Digest Auth</Option>
                 </List>
             </Field>
 
             <Field id="login" type="textfield" defaultValue="" enabledBindingId="useAuth"
                    enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
-                <Label>Login (ignored if not using auth):</Label>
+                <Label>Username:</Label>
             </Field>
 
             <Field id="password" type="textfield" defaultValue="" enabledBindingId="useAuth"
                    enabledBindingValue="basic,digest" visibleBindingId="type" visibleBindingValue="urlType">
-                <Label>Password (ignored if not using auth):</Label>
+                <Label>Password:</Label>
             </Field>
 
-            <Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small"
-                   alignWithControl="false">
-                <Label>Size is in height pixels. Leaving blank will use the default size the camera.
-                </Label>
+            <!-- Processing Options -->
+            <Field type="separator" id="processingSection">
+                <Label>Processing Options</Label>
             </Field>
 
             <Field id="imageSize" type="textfield" defaultValue="">
-                <Label>Maximum image size width (optional):</Label>
+                <Label>Max Width (pixels):</Label>
+                <Description>Leave blank for original size</Description>
             </Field>
 
             <Field id="hidelog" type="checkbox" defaultValue="false">
-                <Label>Hide Execution from Indigo Log:</Label>
+                <Label>Hide from Indigo log</Label>
             </Field>
 
         </ConfigUI>
@@ -105,93 +126,100 @@
         <Name>Download and Stitch Multiple SecuritySpy Images</Name>
         <CallbackMethod>stitch_image_action</CallbackMethod>
         <ConfigUI>
-
+            <!-- Output Configuration -->
+            <Field type="separator" id="outputSection">
+                <Label>Output Settings</Label>
+            </Field>
+            
             <Field id="locationInstructions" type="label" fontColor="darkgray" fontSize="small"
                    alignWithControl="false">
-                <Label>You can choose to provide the path and filename of the resulting stitched image via variable or
-                    by typing into this action dialog. Using a variable is easiest so that it can be referenced in other
-                    actions, such as sending a Pushover notification.
-                </Label>
+                <Label>Choose how to specify the destination file path. Variables are recommended for reuse in other actions.</Label>
             </Field>
 
             <Field id="useVariable" type="checkbox" defaultValue="false">
-                <Label>Use a variable for destination location:</Label>
+                <Label>Use variable for file path:</Label>
             </Field>
 
             <Field id="destination" type="textfield" defaultValue="/Users/myuser/Documents/camera.jpg"
                    visibleBindingId="useVariable" visibleBindingValue="false">
-                <Label>Destination location and filename (full path):</Label>
+                <Label>File Path:</Label>
+                <Description>Full path with extension (.jpg)</Description>
             </Field>
 
             <Field id="destinationVariable" type="menu" visibleBindingId="useVariable" visibleBindingValue="true">
-                <Label>Destination variable containing location and filename (full path):</Label>
+                <Label>Variable Name:</Label>
+                <Description>Variable containing full file path</Description>
                 <List class="indigo.variables" filter=""/>
             </Field>
 
+            <!-- Camera Selection -->
+            <Field type="separator" id="cameraSection">
+                <Label>Camera Selection</Label>
+            </Field>
+            
             <Field type="menu" id="cam1" defaultValue="0">
-                <Label>Camera 1:</Label>
+                <Label>Camera 1 (top):</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam2" defaultValue="1">
-                <Label>Camera 2 (stiched):</Label>
+                <Label>Camera 2:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field id="showMore" type="checkbox" defaultValue="false">
-                <Label>Show More Cameras (Make dialog box larger to see)</Label>
+                <Label>Add more cameras</Label>
+                <Description>Enable to select up to 10 cameras total</Description>
             </Field>
 
             <Field type="menu" id="cam3" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 3 (stiched):</Label>
+                <Label>Camera 3:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam4" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 4 (stiched):</Label>
+                <Label>Camera 4:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam5" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 5 (stiched):</Label>
+                <Label>Camera 5:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam6" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 6 (stiched):</Label>
+                <Label>Camera 6:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam7" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 7 (stiched):</Label>
+                <Label>Camera 7:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam8" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 8 (stiched):</Label>
+                <Label>Camera 8:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam9" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 9 (stiched):</Label>
+                <Label>Camera 9:</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
             <Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 10 (stiched):</Label>
+                <Label>Camera 10 (bottom):</Label>
                 <List class="self" method="camera_list_generator" dynamicReload="true"/>
             </Field>
 
-            <Field id="imageSizeInstructions" hidden="true" type="label" fontColor="darkgray" fontSize="small"
-                   alignWithControl="false">
-                <Label>Setting an image size will apply for all images being stitched. If you have cameras with
-                    different resolutions, this will make them all the same size. Size is in height pixels. Leaving
-                    blank will use the default size for each camera.
-                </Label>
+            <!-- Processing Options -->
+            <Field type="separator" id="processingSection">
+                <Label>Processing Options</Label>
             </Field>
 
             <Field id="imageSize" type="textfield" defaultValue="">
-                <Label>Maximum image size width (optional):</Label>
+                <Label>Max Width (pixels):</Label>
+                <Description>Applied to all images for consistent sizing. Leave blank for original sizes.</Description>
             </Field>
 
         </ConfigUI>
