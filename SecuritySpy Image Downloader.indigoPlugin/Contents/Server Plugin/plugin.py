@@ -664,9 +664,10 @@ class Plugin(indigo.PluginBase):
             # Search only in the specified plugin
             target_plugins = {plugin_type: SECURITYSPY_PLUGINS[plugin_type]} if plugin_type in SECURITYSPY_PLUGINS else {}
         else:
-            # Legacy format - search all plugins
+            # Legacy format - treat as cynical plugin camera for backward compatibility
             camera_num = camera_id
-            target_plugins = SECURITYSPY_PLUGINS
+            self.debug_log(f"Converting legacy camera ID '{camera_id}' to cynical:{camera_id}")
+            target_plugins = {'cynical': SECURITYSPY_PLUGINS['cynical']}
         
         for plugin_key, plugin_config in target_plugins.items():
             try:
