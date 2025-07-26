@@ -20,6 +20,20 @@ REQUEST_TIMEOUT = 30  # Seconds for HTTP requests
 GIF_FRAME_INTERVAL = 2.0  # Seconds between GIF frames
 MAX_CAMERAS = 10  # Maximum cameras supported for stitching
 
+# Supported SecuritySpy plugin configurations
+SECURITYSPY_PLUGINS = {
+    'cynical': {
+        'filter': 'org.cynic.indigo.securityspy.camera',
+        'name': 'Cynical SecuritySpy Plugin',
+        'address_parser': '_parse_cynical_address'
+    },
+    'flyingdiver': {
+        'filter': 'com.flyingdiver.indigoplugin.securityspy',
+        'name': 'FlyingDiver SecuritySpy Plugin', 
+        'address_parser': '_parse_flyingdiver_address'
+    }
+}
+
 
 class Plugin(indigo.PluginBase):
     """
@@ -372,20 +386,8 @@ class Plugin(indigo.PluginBase):
                 self.debug_log("skipping camera")
                 continue
 
-            camera_dev_id = None
-            camera_name = ""
-            # Locate the camera device
-            for camera in indigo.devices.iter(
-                filter="org.cynic.indigo.securityspy.camera"
-            ):
-                if camera.enabled:
-                    camera_num = camera.address[
-                        camera.address.find("(") + 1 : camera.address.find(")")
-                    ]
-                    if camera_num == cam_prop:
-                        camera_dev_id = camera.id
-                        camera_name = camera.name
-                        break
+            # Locate the camera device using multi-plugin support
+            camera_dev_id, camera_name = self._get_camera_info(cam_prop)
 
             # Build the URL for this camera
             image_url = f"{self.security_spy_url}/++image?cameraNum={cam_prop}"
@@ -468,8 +470,12 @@ class Plugin(indigo.PluginBase):
         
         This method is called by Indigo to populate camera selection
         menus in the plugin's action configuration dialogs. It searches
-        for enabled SecuritySpy camera devices and returns them formatted
-        for UI display.
+        for enabled SecuritySpy camera devices from all supported plugins
+        and returns them formatted for UI display.
+        
+        Supported plugins:
+        - Cynical SecuritySpy Plugin (org.cynic.indigo.securityspy.camera)
+        - FlyingDiver SecuritySpy Plugin (com.flyingdiver.indigoplugin.securityspy)
         
         Args:
             filter: Filter string (required by Indigo API, unused)
@@ -482,32 +488,101 @@ class Plugin(indigo.PluginBase):
         """
         camera_options: List[Tuple[str, str]] = []
 
-        # Search for enabled SecuritySpy camera devices
-        # The Cynical SecuritySpy plugin creates devices with this filter ID
-        try:
-            for camera in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera"):
-                if camera.enabled:
-                    camera_name = camera.name
-                    # Extract camera number from device address format: "Camera Name (123)"
-                    open_paren = camera.address.find("(")
-                    close_paren = camera.address.find(")")
-                    if open_paren != -1 and close_paren != -1:
-                        camera_num = camera.address[open_paren + 1:close_paren]
-                        camera_options.append((camera_num, camera_name))
-        except:
-            # If Cynical SecuritySpy plugin is not available, create fallback options
-            self.debug_log("SecuritySpy camera devices not found, using fallback camera list")
+        # Discover cameras from all supported SecuritySpy plugins
+        discovered_cameras = self._discover_cameras()
+        
+        for camera_num, camera_name, plugin_type in discovered_cameras:
+            # Add plugin identifier to camera name for disambiguation
+            plugin_name = SECURITYSPY_PLUGINS[plugin_type]['name']
+            display_name = f"{camera_name} ({plugin_name})"
+            camera_options.append((camera_num, display_name))
+
+        # Sort cameras by number for consistent ordering
+        camera_options.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 999)
 
         # If no cameras found, create numbered placeholders
-        # This provides a fallback when the Cynical SecuritySpy plugin isn't installed
+        # This provides a fallback when no SecuritySpy plugins are installed
         if not camera_options:
+            self.debug_log("No SecuritySpy cameras found from any supported plugin, using fallback camera list")
             for i in range(16):
-                camera_options.append((str(i), f"Camera {i}"))
+                camera_options.append((str(i), f"Camera {i} (Manual)"))
 
         # Always include 'none' option for optional camera slots
         camera_options.append(("-1", "none"))
 
         return camera_options
+    
+    def _parse_cynical_address(self, camera_address: str) -> Optional[str]:
+        """
+        Parse camera number from Cynical SecuritySpy plugin address format.
+        
+        Address format: "Camera Name (camera_number)"
+        Example: "Front Door Camera (1)"
+        
+        Args:
+            camera_address: Camera device address string
+            
+        Returns:
+            Camera number string, or None if parsing fails
+        """
+        open_paren = camera_address.find("(")
+        close_paren = camera_address.find(")")
+        if open_paren != -1 and close_paren != -1:
+            return camera_address[open_paren + 1:close_paren]
+        return None
+    
+    def _parse_flyingdiver_address(self, camera_address: str) -> Optional[str]:
+        """
+        Parse camera number from FlyingDiver SecuritySpy plugin address format.
+        
+        Address format: "{server_id}:{camera_number}"
+        Example: "server123:01"
+        
+        Args:
+            camera_address: Camera device address string
+            
+        Returns:
+            Camera number string (without zero-padding), or None if parsing fails
+        """
+        if ":" in camera_address:
+            parts = camera_address.split(":", 1)  # Split only on first colon
+            if len(parts) == 2 and parts[0] and parts[1]:
+                # Remove zero-padding from camera number
+                camera_num = parts[1].lstrip('0') or '0'
+                return camera_num
+        return None
+    
+    def _discover_cameras(self) -> List[Tuple[str, str, str]]:
+        """
+        Discover cameras from all supported SecuritySpy plugins.
+        
+        Returns:
+            List of (camera_number, camera_name, plugin_type) tuples
+        """
+        discovered_cameras = []
+        
+        for plugin_key, plugin_config in SECURITYSPY_PLUGINS.items():
+            try:
+                # Search for devices from this plugin
+                device_filter = plugin_config['filter']
+                parser_method = getattr(self, plugin_config['address_parser'])
+                
+                for camera in indigo.devices.iter(filter=device_filter):
+                    if camera.enabled:
+                        camera_num = parser_method(camera.address)
+                        if camera_num:
+                            discovered_cameras.append((
+                                camera_num, 
+                                camera.name, 
+                                plugin_key
+                            ))
+                            
+                self.debug_log(f"Found {len([c for c in discovered_cameras if c[2] == plugin_key])} cameras from {plugin_config['name']}")
+                
+            except Exception as e:
+                self.debug_log(f"Error discovering cameras from {plugin_config['name']}: {e}")
+        
+        return discovered_cameras
     
     def _get_destination_path(self, plugin_action: indigo.PluginAction) -> Optional[str]:
         """
@@ -551,7 +626,10 @@ class Plugin(indigo.PluginBase):
     
     def _get_camera_info(self, camera_num: str) -> Tuple[Optional[int], str]:
         """
-        Find camera device information by camera number.
+        Find camera device information by camera number across all supported plugins.
+        
+        This method searches through all supported SecuritySpy plugins to find
+        a camera with the specified number.
         
         Args:
             camera_num: Camera number string to search for
@@ -559,19 +637,20 @@ class Plugin(indigo.PluginBase):
         Returns:
             Tuple of (camera_device_id, camera_name)
         """
-        try:
-            for camera in indigo.devices.iter(filter="org.cynic.indigo.securityspy.camera"):
-                if camera.enabled:
-                    # Extract camera number from device address
-                    open_paren = camera.address.find("(")
-                    close_paren = camera.address.find(")")
-                    if open_paren != -1 and close_paren != -1:
-                        device_cam_num = camera.address[open_paren + 1:close_paren]
+        for plugin_key, plugin_config in SECURITYSPY_PLUGINS.items():
+            try:
+                device_filter = plugin_config['filter']
+                parser_method = getattr(self, plugin_config['address_parser'])
+                
+                for camera in indigo.devices.iter(filter=device_filter):
+                    if camera.enabled:
+                        device_cam_num = parser_method(camera.address)
                         if device_cam_num == camera_num:
                             return camera.id, camera.name
-        except Exception as e:
-            self.debug_log(f"Error searching for camera {camera_num}: {e}")
-            
+                            
+            except Exception as e:
+                self.debug_log(f"Error searching for camera {camera_num} in {plugin_config['name']}: {e}")
+        
         return None, ""
     
     def _build_image_url(self, plugin_action: indigo.PluginAction) -> Tuple[str, str]:

@@ -19,11 +19,14 @@ This is an Indigo home automation plugin that downloads images from SecuritySpy 
 - **Info.plist**: Plugin metadata and version information
 
 ### Key Methods
-- `download_image_action()`: Single image download with optional GIF creation (plugin.py:383)
-- `stitch_image_action()`: Multi-camera vertical stitching (plugin.py:214)
-- `get_image()`: Core HTTP image fetching with authentication (plugin.py:125)
-- `stitch_images()`: PIL-based vertical image concatenation (plugin.py:187)
-- `camera_list_generator()`: Dynamic camera list for UI dropdowns (plugin.py:351)
+- `download_image_action()`: Single image download with optional GIF creation (plugin.py:641)
+- `stitch_image_action()`: Multi-camera vertical stitching (plugin.py:327)
+- `get_image()`: Core HTTP image fetching with authentication (plugin.py:187)
+- `stitch_images()`: PIL-based vertical image concatenation (plugin.py:299)
+- `camera_list_generator()`: Dynamic camera list for UI dropdowns (plugin.py:486)
+- `_discover_cameras()`: Multi-plugin camera discovery (plugin.py:551)
+- `_parse_cynical_address()`: Cynical plugin address parser (plugin.py:513)
+- `_parse_flyingdiver_address()`: FlyingDiver plugin address parser (plugin.py:529)
 
 ### Dependencies
 - **requests**: HTTP client for image downloads with digest/basic auth
@@ -32,11 +35,26 @@ This is an Indigo home automation plugin that downloads images from SecuritySpy 
 
 ## SecuritySpy Integration
 
-The plugin integrates with both:
-1. **SecuritySpy cameras**: Uses camera numbers to construct URLs like `/++image?cameraNum=X`
-2. **Cynical SecuritySpy plugin**: Automatically discovers camera devices with filter `org.cynic.indigo.securityspy.camera`
+The plugin supports multiple SecuritySpy plugin backends:
 
-Camera numbers are extracted from device addresses using pattern `(camera_num)`.
+### Supported Plugins
+1. **Cynical SecuritySpy Plugin** (`org.cynic.indigo.securityspy.camera`)
+   - Address format: `"Camera Name (camera_number)"`
+   - Example: `"Front Door Camera (1)"`
+   - Camera number extracted from parentheses
+
+2. **FlyingDiver SecuritySpy Plugin** (`com.flyingdiver.indigoplugin.securityspy`)  
+   - Address format: `"{server_id}:{camera_number}"`
+   - Example: `"server123:01"`
+   - Camera number extracted from colon separator (zero-padding removed)
+
+### Multi-Plugin Support
+- **Automatic Discovery**: The plugin automatically discovers cameras from all supported SecuritySpy plugins
+- **Unified Interface**: Camera selection menus show cameras from all plugins with plugin identification
+- **Fallback Support**: Manual camera numbers (0-15) available when no plugins are installed
+- **Address Parsing**: Separate parsers handle each plugin's address format
+
+Camera numbers are used to construct SecuritySpy URLs like `/++image?cameraNum=X`.
 
 ## Development Commands
 
@@ -63,7 +81,8 @@ The test suite covers:
 - Image stitching and resizing operations
 - Animated GIF creation
 - Error handling and edge cases
-- SecuritySpy camera integration
+- SecuritySpy camera integration (both Cynical and FlyingDiver plugins)
+- Multi-plugin camera discovery and address parsing
 - Action handlers and validation
 
 Target coverage: 80%+ with detailed HTML reports in `htmlcov/`
