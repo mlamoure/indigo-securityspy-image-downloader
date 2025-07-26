@@ -312,7 +312,12 @@ class TestMultiPluginSupport(unittest.TestCase):
         
         mock_iter.side_effect = mock_device_iter
         
-        # Test finding Cynical camera
+        # Test finding Cynical camera with qualified ID
+        camera_id, camera_name = self.plugin._get_camera_info("cynical:5")
+        self.assertEqual(camera_id, 12345)
+        self.assertEqual(camera_name, "Cynical Camera")
+        
+        # Test finding Cynical camera with legacy numeric ID
         camera_id, camera_name = self.plugin._get_camera_info("5")
         self.assertEqual(camera_id, 12345)
         self.assertEqual(camera_name, "Cynical Camera")
@@ -322,41 +327,10 @@ class TestMultiPluginSupport(unittest.TestCase):
         self.assertEqual(camera_id, 67890)
         self.assertEqual(camera_name, "FlyingDiver Camera")
         
-        # Test legacy numeric ID "3" should NOT find FlyingDiver camera (only searches Cynical now)
-        camera_id, camera_name = self.plugin._get_camera_info("3")
-        self.assertIsNone(camera_id)
-        self.assertEqual(camera_name, "")
-        
         # Test camera not found
-        camera_id, camera_name = self.plugin._get_camera_info("99")
+        camera_id, camera_name = self.plugin._get_camera_info("cynical:99")
         self.assertIsNone(camera_id)
         self.assertEqual(camera_name, "")
-    
-    @patch('plugin.indigo.devices.iter')
-    def test_legacy_camera_id_conversion(self, mock_iter):
-        """Test that legacy numeric camera IDs are automatically converted to cynical: format."""
-        def mock_device_iter(filter=None):
-            if filter == 'org.cynic.indigo.securityspy.camera':
-                mock_camera = Mock()
-                mock_camera.enabled = True
-                mock_camera.name = "Legacy Camera"
-                mock_camera.address = "Legacy Camera (42)"
-                mock_camera.id = 99999
-                return [mock_camera]
-            return []
-        
-        mock_iter.side_effect = mock_device_iter
-        
-        # Test that legacy numeric ID "42" finds the camera in Cynical plugin
-        with patch.object(self.plugin, 'debug_log') as mock_debug:
-            camera_id, camera_name = self.plugin._get_camera_info("42")
-            
-            # Verify the camera was found
-            self.assertEqual(camera_id, 99999)
-            self.assertEqual(camera_name, "Legacy Camera")
-            
-            # Verify debug log was called with conversion message
-            mock_debug.assert_called_once_with("Converting legacy camera ID '42' to cynical:42")
     
     @patch('plugin.indigo.devices.iter')
     def test_camera_list_generator_multi_plugin(self, mock_iter):

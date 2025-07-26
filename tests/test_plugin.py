@@ -449,7 +449,7 @@ class TestActionHandlers(unittest.TestCase):
         """Test building SecuritySpy image URL."""
         action_props = {
             "type": "securityspy",
-            "cam1": "5"
+            "cam1": "5"  # Test with legacy format
         }
         action = MockIndigo.PluginAction(action_props)
         
