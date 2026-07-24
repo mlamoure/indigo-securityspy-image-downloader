@@ -95,13 +95,23 @@ class Plugin(indigo.PluginBase):
 
     def validatePrefsConfigUi(self, values_dict):
         """Validate connection settings. A failed connectivity probe only
-        warns — the server may simply be offline while configuring."""
+        warns — the server may simply be offline while configuring.
+
+        Both fields empty is valid: the plugin stays unconfigured for
+        SecuritySpy but custom-URL downloads still work.
+        """
         errors = indigo.Dict()
 
         ip = (values_dict.get("ip") or "").strip()
         port = (values_dict.get("port") or "").strip()
+        if not ip and not port:
+            return (True, values_dict)
+
         if not ip:
-            errors["ip"] = "SecuritySpy IP or hostname is required"
+            errors["ip"] = (
+                "SecuritySpy IP or hostname is required "
+                "(or clear both fields if you only use custom URLs)"
+            )
         try:
             if not 1 <= int(port) <= 65535:
                 raise ValueError
@@ -197,19 +207,28 @@ class Plugin(indigo.PluginBase):
             self.security_spy_pass,
         )
 
-    def _build_image_url(self, plugin_action: indigo.PluginAction) -> Tuple[str, str]:
-        """Return (image_url, camera_name); camera_name is empty for custom URLs."""
+    def _build_image_url(
+        self, plugin_action: indigo.PluginAction, image_size: int = -1
+    ) -> Tuple[str, str, bool]:
+        """Return (image_url, camera_name, server_resized).
+
+        camera_name is empty for custom URLs. For SecuritySpy sources with a
+        max width, the resize happens server-side via the ++image width
+        parameter and server_resized is True (no local PIL pass needed).
+        """
         if plugin_action.props.get("type") == "securityspy":
             camera_id = plugin_action.props.get("cam1", "0")
             _, camera_name = self._get_camera_info(camera_id)
             _, camera_num = cameras.split_camera_id(camera_id)
             return (
                 http_client.build_securityspy_image_url(
-                    self.security_spy_url, camera_num
+                    self.security_spy_url, camera_num, width=image_size
                 ),
                 camera_name,
+                image_size > 0,
             )
-        return self.prepare_text_value(plugin_action.props.get("url", "")) or "", ""
+        url = self.prepare_text_value(plugin_action.props.get("url", "")) or ""
+        return url, "", False
 
     def _download_to_file(
         self,
@@ -337,10 +356,15 @@ class Plugin(indigo.PluginBase):
     def download_image_action(
         self, plugin_action: indigo.PluginAction, dev: indigo.Device
     ) -> bool:
-        """Download a single image, or capture frames into an animated GIF."""
-        if not self.configured:
+        """Download a single image, or capture frames into an animated GIF.
+
+        Only SecuritySpy sources need the SecuritySpy connection configured;
+        custom-URL downloads work without it.
+        """
+        if plugin_action.props.get("type") == "securityspy" and not self.configured:
             self.logger.error(
-                "Plugin not configured - check SecuritySpy connection settings"
+                "SecuritySpy connection not configured - set the IP and port "
+                "in the plugin config to use SecuritySpy cameras"
             )
             return False
 
@@ -349,11 +373,15 @@ class Plugin(indigo.PluginBase):
 
         try:
             destination_file = self._get_destination_path(plugin_action)
-            image_url, camera_name = self._build_image_url(plugin_action)
+            image_size = self._get_image_size(plugin_action)
+            image_url, camera_name, server_resized = self._build_image_url(
+                plugin_action, image_size
+            )
             if not image_url:
                 self.logger.error("Unable to determine image URL")
                 return False
-            image_size = self._get_image_size(plugin_action)
+            if server_resized:
+                image_size = -1  # SecuritySpy scales via the width param
             auth_type, login, password = self._get_auth_config(plugin_action)
 
             if plugin_action.props.get("gif", False):
@@ -386,10 +414,11 @@ class Plugin(indigo.PluginBase):
     def stitch_image_action(
         self, plugin_action: indigo.PluginAction, dev: indigo.Device
     ) -> bool:
-        """Download multiple camera images and stitch them vertically."""
+        """Download multiple camera images and stitch them into one file."""
         if not self.configured:
             self.logger.error(
-                "Plugin not configured - check SecuritySpy connection settings"
+                "SecuritySpy connection not configured - set the IP and port "
+                "in the plugin config to use the stitch action"
             )
             return False
 
@@ -401,6 +430,11 @@ class Plugin(indigo.PluginBase):
             return False
 
         image_size = self._get_image_size(plugin_action)
+        layout = plugin_action.props.get("layout", image_ops.LAYOUT_VERTICAL)
+        if layout not in image_ops.VALID_LAYOUTS:
+            self.logger.warning(f"Unknown stitch layout '{layout}', using vertical")
+            layout = image_ops.LAYOUT_VERTICAL
+
         temp_directory = os.path.dirname(destination_file)
         images = []
 
@@ -411,8 +445,10 @@ class Plugin(indigo.PluginBase):
 
             _, camera_name = self._get_camera_info(cam_prop)
             _, camera_num = cameras.split_camera_id(cam_prop)
+            # SecuritySpy scales server-side via the width param, so the
+            # frames arrive already bounded — no local PIL resize needed.
             image_url = http_client.build_securityspy_image_url(
-                self.security_spy_url, camera_num
+                self.security_spy_url, camera_num, width=image_size
             )
             temp_file = http_client.create_temp_file(temp_directory, f"stitch{i}")
             try:
@@ -423,11 +459,7 @@ class Plugin(indigo.PluginBase):
                     self.security_spy_login,
                     self.security_spy_pass,
                 )
-                if image_size > 0:
-                    self.logger.debug(
-                        f"resizing '{camera_name}' camera image to max width of {image_size}px"
-                    )
-                images.append(image_ops.load_image(temp_file, max_width=image_size))
+                images.append(image_ops.load_image(temp_file))
             except SecuritySpyImageError as exc:
                 self.logger.warning(
                     f"Skipping camera '{camera_name or cam_prop}': {exc}"
@@ -439,7 +471,7 @@ class Plugin(indigo.PluginBase):
             self.logger.error("No images to stitch.")
             return False
 
-        stitched_image = image_ops.stitch_vertical(images)
+        stitched_image = image_ops.stitch(images, layout=layout)
         try:
             stitched_image.save(destination_file)
         except OSError as exc:
@@ -451,8 +483,8 @@ class Plugin(indigo.PluginBase):
         total_time = round(time.time() - start_time, 2)
         file_size_kb = os.path.getsize(destination_file) >> 10
         self.logger.info(
-            f"stitched {len(images)} camera images and saved to: {destination_file} "
-            f"({file_size_kb} KB).  Total time: {total_time} seconds."
+            f"stitched {len(images)} camera images ({layout} layout) and saved to: "
+            f"{destination_file} ({file_size_kb} KB).  Total time: {total_time} seconds."
         )
         return True
 

@@ -12,18 +12,52 @@ def _make_image_file(path, size=(100, 50), color="red"):
     return str(path)
 
 
-class TestStitchVertical:
-    def test_stacks_images_vertically(self):
-        images = [
+class TestStitch:
+    def _images(self):
+        return [
             Image.new("RGB", (100, 50), color="red"),
             Image.new("RGB", (100, 50), color="blue"),
             Image.new("RGB", (150, 50), color="green"),
         ]
-        result = image_ops.stitch_vertical(images)
-        assert result.size == (150, 150)
+
+    def test_vertical_is_default(self):
+        result = image_ops.stitch(self._images())
+        assert result.size == (150, 150)  # max width, summed heights
+
+    def test_horizontal(self):
+        result = image_ops.stitch(self._images(), layout=image_ops.LAYOUT_HORIZONTAL)
+        assert result.size == (350, 50)  # summed widths, max height
+
+    def test_grid_three_images(self):
+        # 2 columns of 150x50 cells, 2 rows (one cell empty)
+        result = image_ops.stitch(self._images(), layout=image_ops.LAYOUT_GRID)
+        assert result.size == (300, 100)
+
+    def test_grid_four_images(self):
+        images = [Image.new("RGB", (100, 50)) for _ in range(4)]
+        result = image_ops.stitch(images, layout=image_ops.LAYOUT_GRID)
+        assert result.size == (200, 100)
+
+    def test_grid_single_image_is_one_cell(self):
+        result = image_ops.stitch(
+            [Image.new("RGB", (100, 50))], layout=image_ops.LAYOUT_GRID
+        )
+        assert result.size == (100, 50)
+
+    def test_grid_places_images_in_cells(self):
+        red = Image.new("RGB", (10, 10), color="red")
+        blue = Image.new("RGB", (10, 10), color="blue")
+        result = image_ops.stitch([red, blue], layout=image_ops.LAYOUT_GRID)
+        assert result.getpixel((5, 5))[0] > 200  # red in cell (0,0)
+        assert result.getpixel((15, 5))[2] > 200  # blue in cell (0,1)
 
     def test_empty_list_gives_empty_canvas(self):
-        assert image_ops.stitch_vertical([]).size == (0, 0)
+        for layout in image_ops.VALID_LAYOUTS:
+            assert image_ops.stitch([], layout=layout).size == (0, 0)
+
+    def test_unknown_layout_raises(self):
+        with pytest.raises(ImageProcessingError, match="Unknown stitch layout"):
+            image_ops.stitch(self._images(), layout="diagonal")
 
 
 class TestLoadImage:

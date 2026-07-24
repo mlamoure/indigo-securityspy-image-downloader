@@ -1,11 +1,9 @@
-# Runtime dependencies.
-# Unlike the stdlib-only plugins in this family (Roomie, Just Add Power),
-# requests and Pillow are hard runtime deps here: image download, stitching,
-# resizing, and GIF assembly are this plugin's core features.
-# Note: Pillow 12+ requires Python >= 3.10 (Indigo 2023.2+ ships 3.11).
+# Runtime dependencies — keep in sync with the bundle copy at
+# "SecuritySpy Image Downloader.indigoPlugin/Contents/Server Plugin/requirements.txt",
+# which Indigo auto-installs on end-user machines and must stay RUNTIME-ONLY.
 requests~=2.34
 pillow~=12.3
 
-# Development / test dependencies
+# Development / test dependencies (repo root only — never in the bundle copy)
 pytest~=9.1
 black~=26.5

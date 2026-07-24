@@ -83,10 +83,19 @@ class TestDebugLogging:
 
 
 class TestPrefsValidation:
-    def test_missing_ip_blocks_save(self, plugin):
+    def test_both_empty_is_valid_for_custom_url_only_use(self, plugin):
+        result = plugin.validatePrefsConfigUi({"ip": "", "port": ""})
+        assert result[0] is True
+
+    def test_port_without_ip_blocks_save(self, plugin):
         ok, _, errors = plugin.validatePrefsConfigUi({"ip": "", "port": "8000"})
         assert ok is False
         assert "ip" in errors
+
+    def test_ip_without_port_blocks_save(self, plugin):
+        ok, _, errors = plugin.validatePrefsConfigUi({"ip": "host", "port": ""})
+        assert ok is False
+        assert "port" in errors
 
     def test_non_integer_port_blocks_save(self, plugin):
         ok, _, errors = plugin.validatePrefsConfigUi({"ip": "host", "port": "abc"})
@@ -200,16 +209,26 @@ class TestBuildImageUrl:
             indigo.Device(name="Test Camera", address="Test Camera (5)")
         ]
         action = indigo.PluginAction({"type": "securityspy", "cam1": "cynical:5"})
-        url, camera_name = plugin._build_image_url(action)
+        url, camera_name, server_resized = plugin._build_image_url(action)
         assert url == "http://192.168.1.100:8000/++image?cameraNum=5"
         assert camera_name == "Test Camera"
+        assert server_resized is False
+
+    def test_securityspy_camera_with_width(self, plugin):
+        indigo.devices.by_filter["org.cynic.indigo.securityspy.camera"] = [
+            indigo.Device(name="Test Camera", address="Test Camera (5)")
+        ]
+        action = indigo.PluginAction({"type": "securityspy", "cam1": "cynical:5"})
+        url, _, server_resized = plugin._build_image_url(action, image_size=640)
+        assert url == "http://192.168.1.100:8000/++image?cameraNum=5&width=640"
+        assert server_resized is True
 
     def test_legacy_camera_id(self, plugin):
         indigo.devices.by_filter["org.cynic.indigo.securityspy.camera"] = [
             indigo.Device(name="Test Camera", address="Test Camera (5)")
         ]
         action = indigo.PluginAction({"type": "securityspy", "cam1": "5"})
-        url, camera_name = plugin._build_image_url(action)
+        url, camera_name, _ = plugin._build_image_url(action)
         assert url == "http://192.168.1.100:8000/++image?cameraNum=5"
         assert camera_name == "Test Camera"
 
@@ -217,9 +236,12 @@ class TestBuildImageUrl:
         action = indigo.PluginAction(
             {"type": "urlType", "url": "http://example.com/camera.jpg"}
         )
-        url, camera_name = plugin._build_image_url(action)
+        url, camera_name, server_resized = plugin._build_image_url(
+            action, image_size=640
+        )
         assert url == "http://example.com/camera.jpg"
         assert camera_name == ""
+        assert server_resized is False  # custom URLs always resize locally
 
 
 class TestImageSize:
@@ -250,10 +272,45 @@ class TestAuthConfig:
 
 
 class TestDownloadImageAction:
-    def test_not_configured_fails(self, plugin):
+    def test_securityspy_source_requires_config(self, plugin):
         plugin.configured = False
-        action = indigo.PluginAction({"destination": "/tmp/test.jpg"})
+        action = indigo.PluginAction(
+            {"type": "securityspy", "destination": "/tmp/test.jpg"}
+        )
         assert plugin.download_image_action(action, None) is False
+
+    def test_custom_url_works_without_securityspy_config(self, fake_download, tmp_path):
+        plugin = _make_plugin({"debug": False})  # no SecuritySpy settings at all
+        assert plugin.configured is False
+        dest = str(tmp_path / "out.jpg")
+        action = indigo.PluginAction(
+            {
+                "type": "urlType",
+                "url": "http://example.com/cam.jpg",
+                "destination": dest,
+            }
+        )
+        assert plugin.download_image_action(action, None) is True
+        assert os.path.exists(dest)
+
+    def test_securityspy_resize_is_server_side(self, plugin, fake_download, tmp_path):
+        indigo.devices.by_filter["org.cynic.indigo.securityspy.camera"] = [
+            indigo.Device(name="Test Camera", address="Test Camera (5)")
+        ]
+        dest = str(tmp_path / "out.jpg")
+        action = indigo.PluginAction(
+            {
+                "type": "securityspy",
+                "cam1": "cynical:5",
+                "destination": dest,
+                "imageSize": "50",
+            }
+        )
+        assert plugin.download_image_action(action, None) is True
+        assert "width=50" in fake_download[0]["url"]
+        # no local PIL pass: the (fake) 80x40 server response lands untouched
+        with Image.open(dest) as img:
+            assert img.size == (80, 40)
 
     def test_custom_url_download(self, plugin, fake_download, tmp_path):
         dest = str(tmp_path / "out.jpg")
@@ -320,6 +377,70 @@ class TestStitchImageAction:
         plugin.configured = False
         action = indigo.PluginAction({"destination": "/tmp/test.jpg"})
         assert plugin.stitch_image_action(action, None) is False
+
+    def test_horizontal_layout(self, plugin, fake_download, tmp_path):
+        self._register_cameras()
+        dest = str(tmp_path / "stitched.jpg")
+        action = indigo.PluginAction(
+            {
+                "destination": dest,
+                "cam1": "cynical:1",
+                "cam2": "cynical:2",
+                "layout": "horizontal",
+            }
+        )
+        assert plugin.stitch_image_action(action, None) is True
+        with Image.open(dest) as img:
+            assert img.size == (160, 40)  # two 80x40 frames side by side
+
+    def test_grid_layout(self, plugin, fake_download, tmp_path):
+        self._register_cameras()
+        dest = str(tmp_path / "stitched.jpg")
+        action = indigo.PluginAction(
+            {
+                "destination": dest,
+                "cam1": "cynical:1",
+                "cam2": "cynical:2",
+                "layout": "grid",
+            }
+        )
+        assert plugin.stitch_image_action(action, None) is True
+        with Image.open(dest) as img:
+            assert img.size == (160, 40)  # 1 row of 2 cells
+
+    def test_unknown_layout_falls_back_to_vertical(
+        self, plugin, fake_download, tmp_path
+    ):
+        self._register_cameras()
+        dest = str(tmp_path / "stitched.jpg")
+        action = indigo.PluginAction(
+            {
+                "destination": dest,
+                "cam1": "cynical:1",
+                "cam2": "cynical:2",
+                "layout": "diagonal",
+            }
+        )
+        assert plugin.stitch_image_action(action, None) is True
+        with Image.open(dest) as img:
+            assert img.size == (80, 80)  # vertical fallback
+
+    def test_stitch_resize_is_server_side(self, plugin, fake_download, tmp_path):
+        self._register_cameras()
+        dest = str(tmp_path / "stitched.jpg")
+        action = indigo.PluginAction(
+            {
+                "destination": dest,
+                "cam1": "cynical:1",
+                "cam2": "cynical:2",
+                "imageSize": "50",
+            }
+        )
+        assert plugin.stitch_image_action(action, None) is True
+        assert all("width=50" in call["url"] for call in fake_download)
+        # frames arrive "pre-scaled" from the (fake) server; no PIL clamp
+        with Image.open(dest) as img:
+            assert img.size == (80, 80)
 
     def test_stitches_two_cameras(self, plugin, fake_download, tmp_path):
         self._register_cameras()

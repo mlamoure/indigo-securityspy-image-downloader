@@ -20,9 +20,18 @@ from .exceptions import DownloadError
 REQUEST_TIMEOUT = 30  # seconds
 
 
-def build_securityspy_image_url(base_url: str, camera_num: str) -> str:
-    """Build a SecuritySpy still-image URL for a camera number."""
-    return f"{base_url}/++image?cameraNum={camera_num}"
+def build_securityspy_image_url(
+    base_url: str, camera_num: str, width: Optional[int] = None
+) -> str:
+    """Build a SecuritySpy still-image URL for a camera number.
+
+    A positive `width` asks SecuritySpy to scale the image server-side
+    (aspect ratio preserved), so no local resize is needed.
+    """
+    url = f"{base_url}/++image?cameraNum={camera_num}"
+    if width is not None and width > 0:
+        url += f"&width={width}"
+    return url
 
 
 def sanitize_url(url: str) -> str:

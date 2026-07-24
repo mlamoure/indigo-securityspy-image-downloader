@@ -16,6 +16,19 @@ class TestBuildSecuritySpyImageUrl:
         url = http_client.build_securityspy_image_url("http://host:8000", "5")
         assert url == "http://host:8000/++image?cameraNum=5"
 
+    def test_width_appends_server_side_resize_param(self):
+        url = http_client.build_securityspy_image_url(
+            "http://host:8000", "5", width=640
+        )
+        assert url == "http://host:8000/++image?cameraNum=5&width=640"
+
+    def test_non_positive_width_omitted(self):
+        for width in (None, 0, -1):
+            url = http_client.build_securityspy_image_url(
+                "http://host:8000", "5", width=width
+            )
+            assert "width" not in url
+
 
 class TestSanitizeUrl:
     def test_strips_credentials(self):

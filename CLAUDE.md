@@ -27,10 +27,12 @@ Indigo-free core package.
     `DestinationError`, `ImageProcessingError`.
   - `http_client.py` — image downloading (streaming, injectable `session=`
     for tests), auth handler construction (basic/digest), SecuritySpy URL
-    building, URL credential sanitization for safe logging, unique temp-file
-    creation (`tempfile.mkstemp`).
-  - `image_ops.py` — pure-PIL stitching, LANCZOS resizing, animated GIF
-    assembly.
+    building (including the server-side `width` resize param), URL credential
+    sanitization for safe logging, unique temp-file creation
+    (`tempfile.mkstemp`).
+  - `image_ops.py` — pure-PIL stitching (`stitch(images, layout)` with
+    vertical / horizontal / 2-column grid layouts), LANCZOS resizing,
+    animated GIF assembly.
   - `cameras.py` — address parsers for both SecuritySpy backends and the
     `SECURITYSPY_PLUGINS` registry; `split_camera_id` handles legacy IDs.
 - **Actions.xml** — two actions: `downloadImage`, `stitchImage`.
@@ -49,6 +51,14 @@ Indigo-free core package.
 - SSL verification is off by default (`verify_ssl` pref) because self-signed
   certs are the norm for SecuritySpy; `InsecureRequestWarning` is suppressed
   only when verification is disabled.
+- Only SecuritySpy-camera sources require the SecuritySpy connection to be
+  configured; custom-URL downloads must keep working with blank IP/port
+  (`validatePrefsConfigUi` accepts both fields empty, rejects partial).
+- Resizing for SecuritySpy sources happens **server-side** via the `++image`
+  `width` query param (verified live 2026-07-24: width-only preserves aspect
+  ratio, e.g. 3072x1728 → 640x360). Local PIL resizing is only for custom
+  URLs. If an old SecuritySpy ignores `width`, the benign fallback is a
+  full-size image.
 - Never log raw URLs that may embed credentials — use
   `http_client.sanitize_url`.
 - Formatter: **Black** (defaults). Run `black .` before committing.
@@ -123,8 +133,12 @@ Both actions support:
 
 ## File Structure Notes
 
-- Requirements are duplicated at the repo root and inside the plugin bundle —
-  keep them in sync. `requests`/`Pillow` are hard runtime deps (image
-  processing is the core feature); `pytest`/`black` are dev-only.
+- Requirements exist in two places with DIFFERENT contents by design:
+  - the bundle copy (`.../Server Plugin/requirements.txt`) is **runtime-only**
+    (`requests`, `pillow`) — Indigo 2023.2+ auto-pip-installs this file into
+    `Contents/Packages` on every end-user machine, so dev tools must never
+    appear there;
+  - the repo-root copy adds the dev deps (`pytest`, `black`).
+  Keep the runtime pins identical between the two.
 - Versioning: `PluginVersion` in `Info.plist` is CalVer (`YYYY.N.0`); bump on
   behavior-changing PRs. `CFBundleVersion` stays `1.0.0` (family convention).

@@ -1,11 +1,13 @@
 # Runtime dependencies.
+#
+# Indigo (2023.2+) automatically pip-installs this file into Contents/Packages
+# when the plugin is installed or updated on the server — so this copy must
+# stay RUNTIME-ONLY. Never list dev/test tools here; they would be installed
+# onto every end user's machine. Dev deps live in the repo-root requirements.txt.
+#
 # Unlike the stdlib-only plugins in this family (Roomie, Just Add Power),
 # requests and Pillow are hard runtime deps here: image download, stitching,
 # resizing, and GIF assembly are this plugin's core features.
 # Note: Pillow 12+ requires Python >= 3.10 (Indigo 2023.2+ ships 3.11).
 requests~=2.34
 pillow~=12.3
-
-# Development / test dependencies
-pytest~=9.1
-black~=26.5
