@@ -1,1 +1,0 @@
-# Test package for SecuritySpy Image Downloader plugin
