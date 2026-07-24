@@ -1,5 +1,9 @@
 This plugin is a helper set of actions for users of SecuritySpy and Indigo.  It creates two actions for downloading images from SecuritySpy.
 
+# Configuration Notes #
+* SSL: if your SecuritySpy web server uses SSL, enable "Use SSL" in the plugin config. Certificate verification is off by default (self-signed certificates are typical for SecuritySpy); enable "Verify SSL certificates" if you use a trusted certificate. The verify setting also applies to custom URL downloads.
+* Debug logging: the "Debug" checkbox takes effect immediately, including at plugin startup.
+
 # Plugin Actions #
 * Action 1: Simple download to the local mac (source can be SecuritySpy or a specified URL)
 * Action 2: Download multiple images and stitch them together vertically
