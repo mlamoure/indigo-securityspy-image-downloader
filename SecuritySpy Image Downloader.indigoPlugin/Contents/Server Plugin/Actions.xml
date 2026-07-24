@@ -156,9 +156,19 @@
             <Field type="separator" id="cameraSection">
                 <Label>Camera Selection</Label>
             </Field>
-            
+
+            <Field type="menu" id="layout" defaultValue="vertical">
+                <Label>Layout:</Label>
+                <List>
+                    <Option value="vertical">Vertical stack</Option>
+                    <Option value="horizontal">Horizontal row</Option>
+                    <Option value="grid">Grid (2 columns)</Option>
+                </List>
+                <Description>How the camera images are arranged (in camera order)</Description>
+            </Field>
+
             <Field type="menu" id="cam1" defaultValue="0">
-                <Label>Camera 1 (top):</Label>
+                <Label>Camera 1 (first):</Label>
                 <List class="self" method="camera_list_generator"/>
             </Field>
 
@@ -208,7 +218,7 @@
             </Field>
 
             <Field type="menu" id="cam10" defaultValue="-1" visibleBindingId="showMore" visibleBindingValue="true">
-                <Label>Camera 10 (bottom):</Label>
+                <Label>Camera 10 (last):</Label>
                 <List class="self" method="camera_list_generator"/>
             </Field>
 
