@@ -1,25 +1,34 @@
 <?xml version="1.0"?>
 <PluginConfig>
-	<SupportURL>https://github.com/mlamoure/</SupportURL>
+    <SupportURL>https://github.com/mlamoure/indigo-securityspy-image-downloader</SupportURL>
 
-			<Field id="ip" type="textfield" defaultValue="127.0.0.1">
-				<Label>SecuritySpy IP:</Label>
-			</Field>
+    <Field id="ip" type="textfield" defaultValue="127.0.0.1">
+        <Label>SecuritySpy IP:</Label>
+    </Field>
 
-			<Field id="port" type="textfield" defaultValue="8007">
-				<Label>SecuritySpy Port:</Label>
-			</Field>
+    <Field id="port" type="textfield" defaultValue="8007">
+        <Label>SecuritySpy Port:</Label>
+    </Field>
 
-			<Field hidden="false" type="checkbox" id="ssl"><Label>Use SSL (note: will not verify SSL cert)?</Label><Description></Description></Field>
+    <Field id="ssl" type="checkbox" defaultValue="false">
+        <Label>Use SSL</Label>
+    </Field>
 
-			<Field id="login" type="textfield" defaultValue="">
-				<Label>SecuritySpy login:</Label>
-			</Field>
+    <Field id="verify_ssl" type="checkbox" defaultValue="false">
+        <Label>Verify SSL certificates</Label>
+        <Description>Leave unchecked for self-signed certificates (typical SecuritySpy setup). Applies to custom URL downloads too.</Description>
+    </Field>
 
-			<Field id="password" type="textfield" defaultValue="">
-				<Label>SecuritySpy password:</Label>
-			</Field>
+    <Field id="login" type="textfield" defaultValue="">
+        <Label>SecuritySpy login:</Label>
+    </Field>
 
-			<Field hidden="false" type="checkbox" id="debug"><Label>Debug (will produce a lot of log data)</Label><Description></Description></Field>
+    <Field id="password" type="textfield" defaultValue="">
+        <Label>SecuritySpy password:</Label>
+    </Field>
+
+    <Field id="debug" type="checkbox" defaultValue="false">
+        <Label>Debug (will produce a lot of log data)</Label>
+    </Field>
 
 </PluginConfig>

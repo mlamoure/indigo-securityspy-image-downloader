@@ -3,11 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>PluginVersion</key>
-	<string>2025.1.0</string>
+	<string>2026.1.0</string>
 	<key>ServerApiVersion</key>
 	<string>3.6</string>
-	<key>IwsApiVersion</key>
-	<string>1.1.0</string>
 	<key>CFBundleDisplayName</key>
 	<string>Image Downloader and SecuritySpy Helper</string>
 	<key>CFBundleIdentifier</key>
@@ -18,7 +16,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>https://github.com/mlamoure/Indigo-Security-Spy-Downloader</string>
+			<string>https://github.com/mlamoure/indigo-securityspy-image-downloader</string>
 		</dict>
 	</array>
 </dict>
