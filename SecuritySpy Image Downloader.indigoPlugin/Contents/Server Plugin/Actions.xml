@@ -59,7 +59,7 @@
                 <Description>Captures multiple frames over time</Description>
             </Field>
             
-            <Field type="menu" id="gifTime" defaultValue="3" enabledBindingId="gif" enabledBindingValue="true">
+            <Field type="menu" id="gifTime" defaultValue="4" enabledBindingId="gif" enabledBindingValue="true">
                 <Label>Duration:</Label>
                 <List>
                     <Option value="2">2 seconds (2 frames)</Option>

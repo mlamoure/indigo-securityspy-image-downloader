@@ -5,115 +5,126 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 This is an Indigo home automation plugin that downloads images from SecuritySpy (or other URLs), with capabilities for:
-- Single image downloads from SecuritySpy cameras or arbitrary URLs  
+- Single image downloads from SecuritySpy cameras or arbitrary URLs
 - Multi-camera image stitching (vertical concatenation)
 - Animated GIF creation from time-lapse captures
 - Image resizing and authentication support
 
-## Plugin Architecture
+## Architecture
 
-### Core Components
-- **plugin.py**: Main plugin class inheriting from `indigo.PluginBase`
-- **Actions.xml**: Defines two main actions - `downloadImage` and `stitchImage`
-- **PluginConfig.xml**: SecuritySpy connection settings (IP, port, credentials, SSL)
-- **Info.plist**: Plugin metadata and version information
+The plugin follows the family pattern used by the other vtmikel plugins
+(Roomie Remote, Just Add Power, Auto Lights): a thin Indigo adapter over an
+Indigo-free core package.
 
-### Key Methods
-- `download_image_action()`: Single image download with optional GIF creation (plugin.py:641)
-- `stitch_image_action()`: Multi-camera vertical stitching (plugin.py:327)
-- `get_image()`: Core HTTP image fetching with authentication (plugin.py:187)
-- `stitch_images()`: PIL-based vertical image concatenation (plugin.py:299)
-- `camera_list_generator()`: Dynamic camera list for UI dropdowns (plugin.py:486)
-- `_discover_cameras()`: Multi-plugin camera discovery (plugin.py:551)
-- `_parse_cynical_address()`: Cynical plugin address parser (plugin.py:513)
-- `_parse_flyingdiver_address()`: FlyingDiver plugin address parser (plugin.py:529)
+### Layout (under `SecuritySpy Image Downloader.indigoPlugin/Contents/Server Plugin/`)
 
-### Dependencies
-- **requests**: HTTP client for image downloads with digest/basic auth
-- **PIL (Pillow)**: Image processing, resizing, stitching, and GIF creation
-- **indigo**: Home automation platform API (mocked in development)
+- **plugin.py** — thin adapter: Indigo lifecycle, preferences (including
+  `validatePrefsConfigUi`), action callbacks, camera discovery (anything that
+  needs the `indigo` module). Catches the package's typed exceptions and logs
+  them; actions return bool.
+- **securityspy_image/** — core package; **never imports `indigo`**:
+  - `exceptions.py` — `SecuritySpyImageError` base → `DownloadError`,
+    `DestinationError`, `ImageProcessingError`.
+  - `http_client.py` — image downloading (streaming, injectable `session=`
+    for tests), auth handler construction (basic/digest), SecuritySpy URL
+    building, URL credential sanitization for safe logging, unique temp-file
+    creation (`tempfile.mkstemp`).
+  - `image_ops.py` — pure-PIL stitching, LANCZOS resizing, animated GIF
+    assembly.
+  - `cameras.py` — address parsers for both SecuritySpy backends and the
+    `SECURITYSPY_PLUGINS` registry; `split_camera_id` handles legacy IDs.
+- **Actions.xml** — two actions: `downloadImage`, `stitchImage`.
+- **PluginConfig.xml** — SecuritySpy connection settings, SSL + SSL-verify
+  toggles, debug logging toggle.
+
+### Conventions
+
+- Logging goes through `self.logger` (`logging.getLogger("Plugin")`); the
+  `debug` pref sets the `indigo_log_handler` level in `_apply_prefs`, which
+  runs at `__init__` AND on config save — never gate logging on a separate
+  flag.
+- Actions run synchronously on the action thread **by design**: callers rely
+  on the image file existing when the action returns. Do not move downloads
+  or GIF capture to a background queue.
+- SSL verification is off by default (`verify_ssl` pref) because self-signed
+  certs are the norm for SecuritySpy; `InsecureRequestWarning` is suppressed
+  only when verification is disabled.
+- Never log raw URLs that may embed credentials — use
+  `http_client.sanitize_url`.
+- Formatter: **Black** (defaults). Run `black .` before committing.
 
 ## SecuritySpy Integration
 
-The plugin supports multiple SecuritySpy plugin backends:
+The plugin supports multiple SecuritySpy plugin backends (registry in
+`securityspy_image/cameras.py`):
 
-### Supported Plugins
-1. **Cynical SecuritySpy Plugin** (`org.cynic.indigo.securityspy.camera`)
-   - Address format: `"Camera Name (camera_number)"`
-   - Example: `"Front Door Camera (1)"`
-   - Camera number extracted from parentheses
+1. **Cynical SecuritySpy** (`org.cynic.indigo.securityspy.camera`)
+   - Address format: `"Camera Name (camera_number)"` → parsed by
+     `parse_cynical_address` (whitespace/zero-padding stripped, must be
+     numeric)
+2. **FlyingDiver SecuritySpy / Spy Connect** (`com.flyingdiver.indigoplugin.securityspy`)
+   - Address format: `"{server_id}:{camera_number}"` → parsed by
+     `parse_flyingdiver_address`; only `spyCamera` device types are cameras
+     (`spyServer` devices are filtered out)
 
-2. **FlyingDiver SecuritySpy Plugin** (`com.flyingdiver.indigoplugin.securityspy`)  
-   - Address format: `"{server_id}:{camera_number}"`
-   - Example: `"server123:01"`
-   - Camera number extracted from colon separator (zero-padding removed)
-
-### Multi-Plugin Support
-- **Automatic Discovery**: The plugin automatically discovers cameras from all supported SecuritySpy plugins
-- **Unified Interface**: Camera selection menus show cameras from all plugins with plugin identification
-- **Fallback Support**: Manual camera numbers (0-15) available when no plugins are installed
-- **Address Parsing**: Separate parsers handle each plugin's address format
-
-Camera numbers are used to construct SecuritySpy URLs like `/++image?cameraNum=X`.
+Camera IDs in action props are `"plugin_type:camera_num"`; bare numbers are
+legacy configs that map to the Cynical backend (`_get_camera_info`). Camera
+numbers build SecuritySpy URLs like `/++image?cameraNum=X`.
 
 ## Development Commands
 
-### Installation
+### Setup
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate.fish   # fish; use activate for bash
 pip install -r requirements.txt
 ```
 
 ### Testing
-Run the comprehensive test suite:
 ```bash
-python run_tests.py
+python -m pytest
 ```
 
-Or run tests directly with pytest:
+`tests/conftest.py` installs an `indigo` stub into `sys.modules` before any
+plugin import (same approach as Auto Lights / Roomie Remote). HTTP never hits
+the network — tests inject `FakeSession` (or monkeypatch
+`http_client.download_image`); PIL runs for real against temp images.
+
+### Formatting
 ```bash
-pytest tests/ -v --cov=plugin --cov-report=html
+black .
 ```
-
-### Test Coverage
-The test suite covers:
-- Plugin initialization and configuration
-- Image downloading with various auth methods
-- Image stitching and resizing operations
-- Animated GIF creation
-- Error handling and edge cases
-- SecuritySpy camera integration (both Cynical and FlyingDiver plugins)
-- Multi-plugin camera discovery and address parsing
-- Action handlers and validation
-
-Target coverage: 80%+ with detailed HTML reports in `htmlcov/`
 
 ### Deployment
-Use the deployment script for Indigo plugins:
+Use the canonical deploy script (never scp/rsync manually):
 ```bash
-/Users/mike/Mike_Sync_Documents/Programming/mike-local-development-scripts/deploy_indigo_plugin_to_server.sh "SecuritySpy Image Downloader.indigoPlugin"
+/home/mike/programming/mike-local-development-scripts/deploy_indigo_plugin_to_server.sh \
+    "SecuritySpy Image Downloader.indigoPlugin" \
+    /home/mike/programming/indigo-securityspy-image-downloader
 ```
+Then restart the plugin (`com.vtmikel.securityspyimage`) and check its own log
+at `.../Logs/com.vtmikel.securityspyimage/plugin.log`, not the global
+`Events.txt`.
 
 ## Key Configuration
 
 ### Plugin Settings (PluginConfig.xml)
-- SecuritySpy IP/port and SSL settings
+- SecuritySpy IP/port, SSL, and SSL-certificate-verification settings
 - Authentication credentials (login/password)
-- Debug logging toggle
+- Debug logging toggle (takes effect immediately at startup)
 
 ### Action Configuration
 Both actions support:
 - Variable-based or direct path destination files
-- Image resizing by maximum width
-- Debug log suppression with `hidelog` option
-
-The download action additionally supports:
-- GIF creation with configurable duration (2-10 seconds)
-- Frame reversal for animated GIFs
-- Multiple authentication types for arbitrary URLs
+- Image resizing by maximum width (LANCZOS)
+- The download action additionally supports GIF creation (2–10s, frames
+  captured every 2s), frame reversal, and basic/digest auth for custom URLs
+- `hidelog` suppresses the success log line
 
 ## File Structure Notes
 
-The plugin follows standard Indigo plugin structure:
-- `.indigoPlugin/Contents/Info.plist`: Plugin metadata
-- `.indigoPlugin/Contents/Server Plugin/`: Python code and XML definitions
-- Requirements are duplicated at both root and plugin levels
+- Requirements are duplicated at the repo root and inside the plugin bundle —
+  keep them in sync. `requests`/`Pillow` are hard runtime deps (image
+  processing is the core feature); `pytest`/`black` are dev-only.
+- Versioning: `PluginVersion` in `Info.plist` is CalVer (`YYYY.N.0`); bump on
+  behavior-changing PRs. `CFBundleVersion` stays `1.0.0` (family convention).
