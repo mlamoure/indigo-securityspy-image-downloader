@@ -2,8 +2,8 @@
 # "SecuritySpy Image Downloader.indigoPlugin/Contents/Server Plugin/requirements.txt",
 # which Indigo auto-installs on end-user machines and must stay RUNTIME-ONLY.
 requests~=2.34
-pillow~=12.3
+pillow~=13.0
 
 # Development / test dependencies (repo root only — never in the bundle copy)
-pytest~=9.1
-black~=26.5
+pytest~=9.2
+black~=26.10
