@@ -87,3 +87,7 @@ black .               # formatting
 ```
 
 Bug reports and PRs: https://github.com/mlamoure/indigo-securityspy-image-downloader
+
+## License
+
+MIT. See [LICENSE](LICENSE).
