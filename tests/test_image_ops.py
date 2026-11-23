@@ -135,3 +135,81 @@ class TestSaveAnimatedGif:
     def test_no_frames_raises(self, tmp_path):
         with pytest.raises(ImageProcessingError, match="No frames captured"):
             image_ops.save_animated_gif([], str(tmp_path / "out.gif"))
+
+
+def _make_camera_jpeg(path, size=(1920, 1080)):
+    """A camera-like JPEG: a real gradient, not a flat fill, so the JPEG
+    decoder and LANCZOS resampling run on non-trivial pixel data."""
+    Image.linear_gradient("L").resize(size).convert("RGB").save(path, quality=85)
+    return str(path)
+
+
+class TestRealisticImagePaths:
+    """End-to-end image paths on camera-sized synthetic inputs.
+
+    Added with the Pillow 13 upgrade, whose release notes change resize
+    internals (vertical-first resampling, reducing_gap on RGBA) and GIF
+    frame merging; these pin the plugin-visible results.
+    """
+
+    def test_camera_jpeg_bounded_like_securityspy(self, tmp_path):
+        source = _make_camera_jpeg(tmp_path / "cam.jpg")
+        img = image_ops.load_image(source, max_width=640)
+        assert img.size == (640, 360)  # same as SecuritySpy's server-side width
+        assert img.mode == "RGB"
+        # the gradient survives: dark at the top, light at the bottom
+        assert img.getpixel((320, 5))[0] < 30
+        assert img.getpixel((320, 354))[0] > 225
+
+    def test_rgba_png_resized_locally_keeps_alpha(self, tmp_path):
+        source = tmp_path / "custom.png"
+        Image.new("RGBA", (800, 400), (255, 0, 0, 128)).save(source)
+        dest = str(tmp_path / "resized.png")
+        image_ops.resize_to_width(str(source), dest, 200)
+        with Image.open(dest) as img:
+            assert img.size == (200, 100)
+            assert img.mode == "RGBA"
+            assert img.getpixel((100, 50)) == (255, 0, 0, 128)
+
+    def test_stitch_pipeline_from_files(self, tmp_path):
+        paths = [
+            _make_camera_jpeg(tmp_path / f"cam{i}.jpg", size=(1280, 720))
+            for i in range(3)
+        ]
+        images = [image_ops.load_image(path, max_width=640) for path in paths]
+        for layout, expected in (
+            (image_ops.LAYOUT_VERTICAL, (640, 1080)),
+            (image_ops.LAYOUT_HORIZONTAL, (1920, 360)),
+            (image_ops.LAYOUT_GRID, (1280, 720)),
+        ):
+            dest = tmp_path / f"stitched-{layout}.jpg"
+            image_ops.stitch(images, layout=layout).save(dest)
+            with Image.open(dest) as img:
+                assert img.size == expected
+
+    def test_stitch_mixed_modes_onto_rgb_canvas(self):
+        images = [
+            Image.new("RGBA", (40, 20), (0, 0, 255, 255)),
+            Image.new("L", (40, 20), 255),
+            Image.new("P", (40, 20)),
+        ]
+        result = image_ops.stitch(images)
+        assert result.mode == "RGB"
+        assert result.size == (40, 60)
+        assert result.getpixel((5, 5)) == (0, 0, 255)
+        assert result.getpixel((5, 25)) == (255, 255, 255)
+
+    def test_gif_from_static_camera_merges_identical_frames(self, tmp_path):
+        # A static scene yields identical consecutive frames; Pillow merges
+        # them and sums their durations instead of failing.
+        red = Image.new("RGB", (50, 50), color="red")
+        frames = [red, red.copy(), Image.new("RGB", (50, 50), color="blue")]
+        destination = str(tmp_path / "static.gif")
+        image_ops.save_animated_gif(frames, destination)
+        with Image.open(destination) as gif:
+            durations = []
+            for index in range(gif.n_frames):
+                gif.seek(index)
+                durations.append(gif.info["duration"])
+        assert sum(durations) == 3 * image_ops.GIF_PLAYBACK_FRAME_MS
+        assert gif.n_frames == 2

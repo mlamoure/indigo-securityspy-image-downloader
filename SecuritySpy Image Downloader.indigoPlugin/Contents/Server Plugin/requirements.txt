@@ -8,6 +8,7 @@
 # Unlike the stdlib-only plugins in this family (Roomie, Just Add Power),
 # requests and Pillow are hard runtime deps here: image download, stitching,
 # resizing, and GIF assembly are this plugin's core features.
-# Note: Pillow 12+ requires Python >= 3.10 (Indigo 2023.2+ ships 3.11).
+# Note: Pillow 13+ requires Python >= 3.11 (Indigo 2023.2+ ships 3.11; Indigo 2026.1 runs 3.13).
+# Pillow 13.0.0 is the first release with fixes for the Pillow 12.x OSV advisories.
 requests~=2.34
-pillow~=12.3
+pillow~=13.0
